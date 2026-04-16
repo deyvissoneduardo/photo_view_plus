@@ -28,6 +28,9 @@ class ImageWrapper extends StatefulWidget {
     required this.scaleStateCycle,
     required this.onTapUp,
     required this.onTapDown,
+    required this.onLongPress,
+    required this.onScaleStart,
+    required this.onScaleUpdate,
     required this.onScaleEnd,
     required this.outerSize,
     required this.errorBuilder,
@@ -52,6 +55,9 @@ class ImageWrapper extends StatefulWidget {
   final ScaleStateCycle? scaleStateCycle;
   final PhotoViewImageTapUpCallback? onTapUp;
   final PhotoViewImageTapDownCallback? onTapDown;
+  final PhotoViewImageLongPressCallback? onLongPress;
+  final PhotoViewImageScaleStartCallback? onScaleStart;
+  final PhotoViewImageScaleUpdateCallback? onScaleUpdate;
   final PhotoViewImageScaleEndCallback? onScaleEnd;
   final Size outerSize;
 
@@ -117,12 +123,17 @@ class _ImageWrapperState extends State<ImageWrapper> {
           );
         }
 
+        final imageSize = imageState.imageSize;
+        if (imageSize == null) {
+          return _buildLoading(context, imageState.loadingProgress);
+        }
+
         final scaleBoundaries = ScaleBoundaries(
           widget.minScale ?? const PhotoViewScale.fixed(0.0),
           widget.maxScale ?? const PhotoViewScale.fixed(double.infinity),
           widget.initialScale ?? PhotoViewScale.contained,
           widget.outerSize,
-          imageState.imageSize!,
+          imageSize,
         );
 
         final child = PhotoViewCore(
@@ -139,16 +150,19 @@ class _ImageWrapperState extends State<ImageWrapper> {
           scaleBoundaries: scaleBoundaries,
           onTapUp: widget.onTapUp,
           onTapDown: widget.onTapDown,
+          onLongPress: widget.onLongPress,
+          onScaleStart: widget.onScaleStart,
+          onScaleUpdate: widget.onScaleUpdate,
           onScaleEnd: widget.onScaleEnd,
           gestureDetectorBehavior: widget.options.gestureDetectorBehavior,
           tightMode: widget.options.tightMode ?? false,
           filterQuality: widget.options.filterQuality ?? FilterQuality.none,
           disableGestures: widget.options.disableGestures ?? false,
+          disableDoubleTap: widget.options.disableDoubleTap ?? false,
           enablePanAlways: widget.options.enablePanAlways ?? false,
           strictScale: widget.options.strictScale ?? false,
-          interactionPolicy:
-              widget.options.interactionPolicy ??
-                  const PhotoViewInteractionPolicy(),
+          interactionPolicy: widget.options.interactionPolicy ??
+              const PhotoViewInteractionPolicy(),
         );
 
         return _decorate(
@@ -162,20 +176,22 @@ class _ImageWrapperState extends State<ImageWrapper> {
 
   Widget _buildLoading(BuildContext context, ImageChunkEvent? loadingProgress) {
     final richBuilder = widget.options.loadingStateBuilder;
-    final child = richBuilder != null
-        ? richBuilder(
-            context,
-            PhotoViewLoadingDetails(
-              imageProvider: widget.imageProvider,
-              outerSize: widget.outerSize,
-              progress: loadingProgress,
-            ),
-          )
-        : widget.loadingBuilder != null
-            ? widget.loadingBuilder!(context, loadingProgress)
-            : PhotoViewDefaultLoading(
-                event: loadingProgress,
-              );
+    final child = _wrapHeroState(
+      richBuilder != null
+          ? richBuilder(
+              context,
+              PhotoViewLoadingDetails(
+                imageProvider: widget.imageProvider,
+                outerSize: widget.outerSize,
+                progress: loadingProgress,
+              ),
+            )
+          : widget.loadingBuilder != null
+              ? widget.loadingBuilder!(context, loadingProgress)
+              : PhotoViewDefaultLoading(
+                  event: loadingProgress,
+                ),
+    );
 
     return _decorate(
       context,
@@ -196,21 +212,23 @@ class _ImageWrapperState extends State<ImageWrapper> {
     StackTrace? stackTrace,
   ) {
     final richBuilder = widget.options.errorStateBuilder;
-    final child = richBuilder != null
-        ? richBuilder(
-            context,
-            PhotoViewErrorDetails(
-              imageProvider: widget.imageProvider,
-              outerSize: widget.outerSize,
-              error: error,
-              stackTrace: stackTrace,
-            ),
-          )
-        : widget.errorBuilder != null
-            ? widget.errorBuilder!(context, error, stackTrace)
-            : PhotoViewDefaultError(
-                decoration: widget.backgroundDecoration,
-              );
+    final child = _wrapHeroState(
+      richBuilder != null
+          ? richBuilder(
+              context,
+              PhotoViewErrorDetails(
+                imageProvider: widget.imageProvider,
+                outerSize: widget.outerSize,
+                error: error,
+                stackTrace: stackTrace,
+              ),
+            )
+          : widget.errorBuilder != null
+              ? widget.errorBuilder!(context, error, stackTrace)
+              : PhotoViewDefaultError(
+                  decoration: widget.backgroundDecoration,
+                ),
+    );
 
     return _decorate(
       context,
@@ -250,6 +268,22 @@ class _ImageWrapperState extends State<ImageWrapper> {
     );
   }
 
+  Widget _wrapHeroState(Widget child) {
+    final heroAttributes = widget.heroAttributes;
+    if (heroAttributes == null) {
+      return child;
+    }
+
+    return Hero(
+      tag: heroAttributes.tag,
+      createRectTween: heroAttributes.createRectTween,
+      flightShuttleBuilder: heroAttributes.flightShuttleBuilder,
+      placeholderBuilder: heroAttributes.placeholderBuilder,
+      transitionOnUserGestures: heroAttributes.transitionOnUserGestures,
+      child: child,
+    );
+  }
+
   Widget _decorate(
     BuildContext context, {
     required Widget child,
@@ -260,18 +294,23 @@ class _ImageWrapperState extends State<ImageWrapper> {
       current = widget.options.backgroundBuilder!(context, current);
     }
 
-    final overlay = widget.options.overlayBuilder?.call(context, overlayDetails);
-    if (overlay == null) {
-      return current;
+    final overlay =
+        widget.options.overlayBuilder?.call(context, overlayDetails);
+    if (overlay != null) {
+      current = Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          current,
+          IgnorePointer(child: overlay),
+        ],
+      );
     }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        current,
-        IgnorePointer(child: overlay),
-      ],
-    );
+    if (widget.options.childWrapper != null) {
+      current = widget.options.childWrapper!(context, current);
+    }
+
+    return current;
   }
 }
 
@@ -294,6 +333,9 @@ class CustomChildWrapper extends StatelessWidget {
     required this.scaleStateCycle,
     this.onTapUp,
     this.onTapDown,
+    this.onLongPress,
+    this.onScaleStart,
+    this.onScaleUpdate,
     this.onScaleEnd,
     required this.outerSize,
   });
@@ -314,6 +356,9 @@ class CustomChildWrapper extends StatelessWidget {
   final ScaleStateCycle? scaleStateCycle;
   final PhotoViewImageTapUpCallback? onTapUp;
   final PhotoViewImageTapDownCallback? onTapDown;
+  final PhotoViewImageLongPressCallback? onLongPress;
+  final PhotoViewImageScaleStartCallback? onScaleStart;
+  final PhotoViewImageScaleUpdateCallback? onScaleUpdate;
   final PhotoViewImageScaleEndCallback? onScaleEnd;
   final Size outerSize;
 
@@ -340,11 +385,15 @@ class CustomChildWrapper extends StatelessWidget {
       strictScale: options.strictScale ?? false,
       onTapUp: onTapUp,
       onTapDown: onTapDown,
+      onLongPress: onLongPress,
+      onScaleStart: onScaleStart,
+      onScaleUpdate: onScaleUpdate,
       onScaleEnd: onScaleEnd,
       gestureDetectorBehavior: options.gestureDetectorBehavior,
       tightMode: options.tightMode ?? false,
       filterQuality: options.filterQuality ?? FilterQuality.none,
       disableGestures: options.disableGestures ?? false,
+      disableDoubleTap: options.disableDoubleTap ?? false,
       enablePanAlways: options.enablePanAlways ?? false,
       interactionPolicy:
           options.interactionPolicy ?? const PhotoViewInteractionPolicy(),
@@ -363,16 +412,20 @@ class CustomChildWrapper extends StatelessWidget {
       ),
     );
 
-    if (overlay == null) {
-      return current;
+    if (overlay != null) {
+      current = Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          current,
+          IgnorePointer(child: overlay),
+        ],
+      );
     }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: <Widget>[
-        current,
-        IgnorePointer(child: overlay),
-      ],
-    );
+    if (options.childWrapper != null) {
+      current = options.childWrapper!(context, current);
+    }
+
+    return current;
   }
 }

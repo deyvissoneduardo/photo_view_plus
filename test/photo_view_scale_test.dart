@@ -24,6 +24,27 @@ void main() {
       expect(boundaries.initialScale, 2.0);
     });
 
+    test('resolves containedNoScaleUp without stretching small content', () {
+      const smallBoundaries = ScaleBoundaries(
+        PhotoViewScale.fixed(0.1),
+        PhotoViewScale.fixed(10.0),
+        PhotoViewComputedScale.containedNoScaleUp,
+        outerSize,
+        childSize,
+      );
+
+      const largeBoundaries = ScaleBoundaries(
+        PhotoViewScale.fixed(0.1),
+        PhotoViewScale.fixed(10.0),
+        PhotoViewComputedScale.containedNoScaleUp,
+        Size(100, 100),
+        Size(300, 300),
+      );
+
+      expect(smallBoundaries.initialScale, 1.0);
+      expect(largeBoundaries.initialScale, closeTo(1 / 3, 0.0001));
+    });
+
     test('clamps initial scale between min and max', () {
       const boundaries = ScaleBoundaries(
         PhotoViewScale.fixed(1.5),

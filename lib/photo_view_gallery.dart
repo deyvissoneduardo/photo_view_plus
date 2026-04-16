@@ -5,8 +5,11 @@ import 'package:photo_view/photo_view.dart'
         LoadingBuilder,
         PhotoView,
         PhotoViewScale,
+        PhotoViewImageLongPressCallback,
         PhotoViewImageTapDownCallback,
         PhotoViewImageTapUpCallback,
+        PhotoViewImageScaleStartCallback,
+        PhotoViewImageScaleUpdateCallback,
         PhotoViewImageScaleEndCallback,
         ScaleStateCycle;
 import 'package:photo_view/src/domain/models/models.dart';
@@ -115,6 +118,7 @@ class PhotoViewGallery extends StatefulWidget {
     this.customSize,
     this.allowImplicitScrolling = false,
     this.pageSnapping = true,
+    this.childWrapper,
   })  : itemCount = null,
         builder = null;
 
@@ -140,6 +144,7 @@ class PhotoViewGallery extends StatefulWidget {
     this.customSize,
     this.allowImplicitScrolling = false,
     this.pageSnapping = true,
+    this.childWrapper,
   })  : pageOptions = null,
         assert(itemCount != null),
         assert(builder != null);
@@ -195,6 +200,8 @@ class PhotoViewGallery extends StatefulWidget {
 
   final bool pageSnapping;
 
+  final PhotoViewGalleryChildWrapper? childWrapper;
+
   bool get _isBuilder => builder != null;
 
   @override
@@ -231,16 +238,16 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
     return PhotoViewGalleryOptions(
       scrollPhysics: widget.scrollPhysics ?? options.scrollPhysics,
       scrollDirection: widget.scrollDirection,
-      allowImplicitScrolling:
-          widget.allowImplicitScrolling || (options.allowImplicitScrolling ?? false),
+      allowImplicitScrolling: widget.allowImplicitScrolling ||
+          (options.allowImplicitScrolling ?? false),
       pageSnapping: widget.pageSnapping,
       preloadPagesCount: options.preloadPagesCount ?? 1,
-      pageRetentionPolicy:
-          options.pageRetentionPolicy ??
-              (widget.wantKeepAlive
-                  ? PhotoViewGalleryPageRetentionPolicy.keepAlive
-                  : PhotoViewGalleryPageRetentionPolicy.reset),
+      pageRetentionPolicy: options.pageRetentionPolicy ??
+          (widget.wantKeepAlive
+              ? PhotoViewGalleryPageRetentionPolicy.keepAlive
+              : PhotoViewGalleryPageRetentionPolicy.reset),
       options: options.options,
+      childWrapper: widget.childWrapper ?? options.childWrapper,
     );
   }
 
@@ -265,7 +272,8 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
         },
         itemCount: itemCount,
         itemBuilder: _buildItem,
-        scrollDirection: galleryOptions.scrollDirection ?? widget.scrollDirection,
+        scrollDirection:
+            galleryOptions.scrollDirection ?? widget.scrollDirection,
         physics: galleryOptions.scrollPhysics ?? widget.scrollPhysics,
         allowImplicitScrolling: galleryOptions.allowImplicitScrolling ??
             widget.allowImplicitScrolling,
@@ -275,40 +283,49 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
   }
 
   Widget _buildItem(BuildContext context, int index) {
+    final galleryOptions = _resolvedGalleryOptions;
     final pageOption = _buildPageOption(context, index);
-    final globalOptions = _resolvedGalleryOptions.options ?? const PhotoViewOptions();
+    final globalOptions = galleryOptions.options ?? const PhotoViewOptions();
     final resolvedOptions = globalOptions.copyWith(
-      backgroundDecoration:
-          pageOption.options?.backgroundDecoration ?? globalOptions.backgroundDecoration,
-      wantKeepAlive:
-          (pageOption.options?.wantKeepAlive ?? false) ||
-              ((_resolvedGalleryOptions.pageRetentionPolicy ??
-                          PhotoViewGalleryPageRetentionPolicy.reset) ==
-                      PhotoViewGalleryPageRetentionPolicy.keepAlive),
+      backgroundDecoration: pageOption.options?.backgroundDecoration ??
+          globalOptions.backgroundDecoration,
+      wantKeepAlive: (pageOption.options?.wantKeepAlive ?? false) ||
+          ((galleryOptions.pageRetentionPolicy ??
+                  PhotoViewGalleryPageRetentionPolicy.reset) ==
+              PhotoViewGalleryPageRetentionPolicy.keepAlive),
       customSize: widget.customSize ?? globalOptions.customSize,
-      gestureDetectorBehavior:
-          pageOption.gestureDetectorBehavior ??
-              pageOption.options?.gestureDetectorBehavior ??
-              globalOptions.gestureDetectorBehavior,
-      tightMode:
-          pageOption.tightMode ?? pageOption.options?.tightMode ?? globalOptions.tightMode,
+      gestureDetectorBehavior: pageOption.gestureDetectorBehavior ??
+          pageOption.options?.gestureDetectorBehavior ??
+          globalOptions.gestureDetectorBehavior,
+      tightMode: pageOption.tightMode ??
+          pageOption.options?.tightMode ??
+          globalOptions.tightMode,
       filterQuality: pageOption.filterQuality ??
           pageOption.options?.filterQuality ??
           globalOptions.filterQuality,
       disableGestures: pageOption.disableGestures ??
           pageOption.options?.disableGestures ??
           globalOptions.disableGestures,
-      enablePanAlways: pageOption.options?.enablePanAlways ?? globalOptions.enablePanAlways,
-      strictScale: pageOption.options?.strictScale ?? globalOptions.strictScale,
-      interactionPolicy:
-          pageOption.options?.interactionPolicy ?? globalOptions.interactionPolicy,
-      overlayBuilder: pageOption.options?.overlayBuilder ?? globalOptions.overlayBuilder,
-      backgroundBuilder:
-          pageOption.options?.backgroundBuilder ?? globalOptions.backgroundBuilder,
-      loadingStateBuilder:
-          pageOption.options?.loadingStateBuilder ?? globalOptions.loadingStateBuilder,
-      errorStateBuilder:
-          pageOption.options?.errorStateBuilder ?? globalOptions.errorStateBuilder,
+      enablePanAlways:
+          pageOption.options?.enablePanAlways ?? globalOptions.enablePanAlways,
+      strictScale: pageOption.strictScale ??
+          pageOption.options?.strictScale ??
+          globalOptions.strictScale,
+      disableDoubleTap: pageOption.disableDoubleTap ??
+          pageOption.options?.disableDoubleTap ??
+          globalOptions.disableDoubleTap,
+      interactionPolicy: pageOption.options?.interactionPolicy ??
+          globalOptions.interactionPolicy,
+      overlayBuilder:
+          pageOption.options?.overlayBuilder ?? globalOptions.overlayBuilder,
+      backgroundBuilder: pageOption.options?.backgroundBuilder ??
+          globalOptions.backgroundBuilder,
+      loadingStateBuilder: pageOption.options?.loadingStateBuilder ??
+          globalOptions.loadingStateBuilder,
+      errorStateBuilder: pageOption.options?.errorStateBuilder ??
+          globalOptions.errorStateBuilder,
+      childWrapper:
+          pageOption.options?.childWrapper ?? globalOptions.childWrapper,
     );
     final isCustomChild = pageOption.child != null;
 
@@ -330,6 +347,9 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
             scaleStateCycle: pageOption.scaleStateCycle,
             onTapUp: pageOption.onTapUp,
             onTapDown: pageOption.onTapDown,
+            onLongPress: pageOption.onLongPress,
+            onScaleStart: pageOption.onScaleStart,
+            onScaleUpdate: pageOption.onScaleUpdate,
             onScaleEnd: pageOption.onScaleEnd,
             basePosition: pageOption.basePosition,
             child: pageOption.child,
@@ -354,14 +374,24 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
             scaleStateCycle: pageOption.scaleStateCycle,
             onTapUp: pageOption.onTapUp,
             onTapDown: pageOption.onTapDown,
+            onLongPress: pageOption.onLongPress,
+            onScaleStart: pageOption.onScaleStart,
+            onScaleUpdate: pageOption.onScaleUpdate,
             onScaleEnd: pageOption.onScaleEnd,
             basePosition: pageOption.basePosition,
             errorBuilder: pageOption.errorBuilder,
           );
 
-    return ClipRect(
+    final wrappedChild = ClipRect(
       child: photoView,
     );
+
+    final childWrapper = pageOption.childWrapper ?? galleryOptions.childWrapper;
+    if (childWrapper == null) {
+      return wrappedChild;
+    }
+
+    return childWrapper(context, index, wrappedChild);
   }
 
   PhotoViewGalleryPageOptions _buildPageOption(
@@ -411,6 +441,7 @@ class PhotoViewGalleryPageOptions {
     this.semanticLabel,
     this.minScale,
     this.maxScale,
+    this.strictScale,
     this.initialScale,
     this.controller,
     this.scaleStateController,
@@ -418,12 +449,17 @@ class PhotoViewGalleryPageOptions {
     this.scaleStateCycle,
     this.onTapUp,
     this.onTapDown,
+    this.onLongPress,
+    this.onScaleStart,
+    this.onScaleUpdate,
     this.onScaleEnd,
     this.gestureDetectorBehavior,
     this.tightMode,
     this.filterQuality,
     this.disableGestures,
+    this.disableDoubleTap,
     this.errorBuilder,
+    this.childWrapper,
   })  : child = null,
         childSize = null,
         assert(imageProvider != null);
@@ -437,6 +473,7 @@ class PhotoViewGalleryPageOptions {
     this.heroAttributes,
     this.minScale,
     this.maxScale,
+    this.strictScale,
     this.initialScale,
     this.controller,
     this.scaleStateController,
@@ -444,11 +481,16 @@ class PhotoViewGalleryPageOptions {
     this.scaleStateCycle,
     this.onTapUp,
     this.onTapDown,
+    this.onLongPress,
+    this.onScaleStart,
+    this.onScaleUpdate,
     this.onScaleEnd,
     this.gestureDetectorBehavior,
     this.tightMode,
     this.filterQuality,
     this.disableGestures,
+    this.disableDoubleTap,
+    this.childWrapper,
   })  : errorBuilder = null,
         imageProvider = null;
 
@@ -468,6 +510,7 @@ class PhotoViewGalleryPageOptions {
 
   /// Mirror to [PhotoView.maxScale]
   final PhotoViewScale? maxScale;
+  final bool? strictScale;
 
   /// Mirror to [PhotoView.initialScale]
   final PhotoViewScale? initialScale;
@@ -496,6 +539,15 @@ class PhotoViewGalleryPageOptions {
   /// Mirror to [PhotoView.onTapDown]
   final PhotoViewImageTapDownCallback? onTapDown;
 
+  /// Mirror to [PhotoView.onLongPress]
+  final PhotoViewImageLongPressCallback? onLongPress;
+
+  /// Mirror to [PhotoView.onScaleStart]
+  final PhotoViewImageScaleStartCallback? onScaleStart;
+
+  /// Mirror to [PhotoView.onScaleUpdate]
+  final PhotoViewImageScaleUpdateCallback? onScaleUpdate;
+
   /// Mirror to [PhotoView.onScaleEnd]
   final PhotoViewImageScaleEndCallback? onScaleEnd;
 
@@ -508,9 +560,15 @@ class PhotoViewGalleryPageOptions {
   /// Mirror to [PhotoView.disableGestures]
   final bool? disableGestures;
 
+  /// Mirror to [PhotoView.disableDoubleTap]
+  final bool? disableDoubleTap;
+
   /// Quality levels for image filters.
   final FilterQuality? filterQuality;
 
   /// Mirror to [PhotoView.errorBuilder]
   final ImageErrorWidgetBuilder? errorBuilder;
+
+  /// Wraps a page widget after the internal ClipRect is applied.
+  final PhotoViewGalleryChildWrapper? childWrapper;
 }

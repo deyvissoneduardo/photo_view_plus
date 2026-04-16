@@ -1,10 +1,17 @@
+import 'dart:math' as math;
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:photo_view/photo_view.dart'
     show
         PhotoViewScaleState,
         PhotoViewHeroAttributes,
+        PhotoViewImageLongPressCallback,
         PhotoViewImageTapDownCallback,
         PhotoViewImageTapUpCallback,
+        PhotoViewImageScaleStartCallback,
+        PhotoViewImageScaleUpdateCallback,
         PhotoViewImageScaleEndCallback,
         ScaleStateCycle;
 import 'package:photo_view/src/core/photo_view_gesture_detector.dart';
@@ -30,6 +37,9 @@ class PhotoViewCore extends StatefulWidget {
     required this.enableRotation,
     required this.onTapUp,
     required this.onTapDown,
+    required this.onLongPress,
+    required this.onScaleStart,
+    required this.onScaleUpdate,
     required this.onScaleEnd,
     required this.gestureDetectorBehavior,
     required this.controller,
@@ -40,6 +50,7 @@ class PhotoViewCore extends StatefulWidget {
     required this.tightMode,
     required this.filterQuality,
     required this.disableGestures,
+    required this.disableDoubleTap,
     required this.enablePanAlways,
     required this.strictScale,
     required this.interactionPolicy,
@@ -53,6 +64,9 @@ class PhotoViewCore extends StatefulWidget {
     required this.enableRotation,
     this.onTapUp,
     this.onTapDown,
+    this.onLongPress,
+    this.onScaleStart,
+    this.onScaleUpdate,
     this.onScaleEnd,
     this.gestureDetectorBehavior,
     required this.controller,
@@ -63,6 +77,7 @@ class PhotoViewCore extends StatefulWidget {
     required this.tightMode,
     required this.filterQuality,
     required this.disableGestures,
+    required this.disableDoubleTap,
     required this.enablePanAlways,
     required this.strictScale,
     required this.interactionPolicy,
@@ -86,11 +101,15 @@ class PhotoViewCore extends StatefulWidget {
 
   final PhotoViewImageTapUpCallback? onTapUp;
   final PhotoViewImageTapDownCallback? onTapDown;
+  final PhotoViewImageLongPressCallback? onLongPress;
+  final PhotoViewImageScaleStartCallback? onScaleStart;
+  final PhotoViewImageScaleUpdateCallback? onScaleUpdate;
   final PhotoViewImageScaleEndCallback? onScaleEnd;
 
   final HitTestBehavior? gestureDetectorBehavior;
   final bool tightMode;
   final bool disableGestures;
+  final bool disableDoubleTap;
   final bool enablePanAlways;
   final bool strictScale;
   final PhotoViewInteractionPolicy interactionPolicy;
@@ -114,6 +133,9 @@ class PhotoViewCoreState extends State<PhotoViewCore>
   double? _scaleBefore;
   double? _rotationBefore;
   bool _isGestureActive = false;
+  bool _isMouseDragging = false;
+  bool _isMouseHoveringContent = false;
+  Offset? _lastMouseLocalPosition;
 
   late final AnimationController _scaleAnimationController;
   Animation<double>? _scaleAnimation;
@@ -153,15 +175,22 @@ class PhotoViewCoreState extends State<PhotoViewCore>
     _isGestureActive = true;
     _rotationBefore = controller.rotation;
     _scaleBefore = scale;
-    _normalizedPosition = details.focalPoint - controller.position;
+    final transformOrigin =
+        widget.basePosition.alongSize(widget.scaleBoundaries.outerSize);
+    _normalizedPosition =
+        details.focalPoint - transformOrigin - controller.position;
     _scaleAnimationController.stop();
     _positionAnimationController.stop();
     _rotationAnimationController.stop();
+    widget.onScaleStart?.call(context, details, controller.value);
   }
 
   void onScaleUpdate(ScaleUpdateDetails details) {
     final double newScale = _scaleBefore! * details.scale;
-    final Offset delta = details.focalPoint - _normalizedPosition!;
+    final transformOrigin =
+        widget.basePosition.alongSize(widget.scaleBoundaries.outerSize);
+    final delta = _normalizedPosition! * details.scale;
+    final newPosition = details.focalPoint - transformOrigin - delta;
 
     if (widget.strictScale &&
         (newScale > widget.scaleBoundaries.maxScale ||
@@ -174,12 +203,13 @@ class PhotoViewCoreState extends State<PhotoViewCore>
     updateMultiple(
       scale: newScale,
       position: widget.enablePanAlways
-          ? delta
-          : clampPosition(position: delta * details.scale),
+          ? newPosition
+          : clampPosition(position: newPosition),
       rotation:
           widget.enableRotation ? _rotationBefore! + details.rotation : null,
       rotationFocusPoint: widget.enableRotation ? details.focalPoint : null,
     );
+    widget.onScaleUpdate?.call(context, details, controller.value);
   }
 
   void onScaleEnd(ScaleEndDetails details) {
@@ -214,6 +244,131 @@ class PhotoViewCoreState extends State<PhotoViewCore>
 
   void onDoubleTap() {
     nextScaleState();
+  }
+
+  Offset get _transformOrigin =>
+      widget.basePosition.alongSize(widget.scaleBoundaries.outerSize);
+
+  void _panBy(Offset delta) {
+    final nextPosition = controller.position + delta;
+    controller.position = widget.enablePanAlways
+        ? nextPosition
+        : clampPosition(position: nextPosition);
+  }
+
+  void _zoomBy(double factor, Offset focalPoint) {
+    final currentScale = scale;
+    final targetScale = (currentScale * factor).clamp(
+      widget.scaleBoundaries.minScale,
+      widget.scaleBoundaries.maxScale,
+    );
+
+    if (widget.strictScale && targetScale == currentScale) {
+      return;
+    }
+
+    final focalVector = focalPoint - _transformOrigin - controller.position;
+    final normalizedVector = focalVector / currentScale;
+    final nextPosition =
+        focalPoint - _transformOrigin - (normalizedVector * targetScale);
+
+    updateScaleStateFromNewScale(targetScale);
+    updateMultiple(
+      scale: targetScale,
+      position: widget.enablePanAlways
+          ? nextPosition
+          : clampPosition(position: nextPosition, scale: targetScale),
+    );
+  }
+
+  bool _hitTestContent(Offset localPosition) {
+    final currentScale = scale;
+    if (currentScale == 0) {
+      return false;
+    }
+
+    final centeredLeft = (widget.scaleBoundaries.outerSize.width -
+            widget.scaleBoundaries.childSize.width) /
+        2;
+    final centeredTop = (widget.scaleBoundaries.outerSize.height -
+            widget.scaleBoundaries.childSize.height) /
+        2;
+    final alignedLeft = centeredLeft + centeredLeft * widget.basePosition.x;
+    final alignedTop = centeredTop + centeredTop * widget.basePosition.y;
+    final baseRect = Rect.fromLTWH(
+      alignedLeft,
+      alignedTop,
+      widget.scaleBoundaries.childSize.width,
+      widget.scaleBoundaries.childSize.height,
+    );
+
+    var point = localPosition - _transformOrigin;
+    point -= controller.position;
+    point = Offset(point.dx / currentScale, point.dy / currentScale);
+
+    if (controller.rotation != 0) {
+      final cosTheta = math.cos(-controller.rotation);
+      final sinTheta = math.sin(-controller.rotation);
+      point = Offset(
+        point.dx * cosTheta - point.dy * sinTheta,
+        point.dx * sinTheta + point.dy * cosTheta,
+      );
+    }
+
+    point += _transformOrigin;
+    return baseRect.contains(point);
+  }
+
+  void _updateMouseHoverState([Offset? localPosition]) {
+    final position = localPosition ?? _lastMouseLocalPosition;
+    if (position == null || _isMouseDragging) {
+      return;
+    }
+
+    final hovering = _hitTestContent(position);
+    if (hovering != _isMouseHoveringContent) {
+      setState(() {
+        _isMouseHoveringContent = hovering;
+      });
+    }
+  }
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent || event.kind != PointerDeviceKind.mouse) {
+      return;
+    }
+
+    final keys = HardwareKeyboard.instance.logicalKeysPressed;
+    final ctrlPressed = keys.contains(LogicalKeyboardKey.controlLeft) ||
+        keys.contains(LogicalKeyboardKey.controlRight);
+    final shiftPressed = keys.contains(LogicalKeyboardKey.shiftLeft) ||
+        keys.contains(LogicalKeyboardKey.shiftRight);
+
+    if (ctrlPressed) {
+      final zoomFactor = event.scrollDelta.dy > 0 ? 0.95 : 1.05;
+      _zoomBy(zoomFactor, event.localPosition);
+      _updateMouseHoverState(event.localPosition);
+      return;
+    }
+
+    var deltaX = -event.scrollDelta.dx;
+    var deltaY = -event.scrollDelta.dy;
+    if (shiftPressed && deltaX == 0.0) {
+      deltaX = deltaY;
+      deltaY = 0.0;
+    }
+
+    _panBy(Offset(deltaX, deltaY));
+    _updateMouseHoverState(event.localPosition);
+  }
+
+  void _onPointerPanZoomUpdate(PointerPanZoomUpdateEvent event) {
+    if (event.scale != 1.0) {
+      _zoomBy(event.scale, event.localPosition);
+    }
+    if (event.panDelta != Offset.zero) {
+      _panBy(event.panDelta);
+    }
   }
 
   void animateScale(double from, double to) {
@@ -294,6 +449,10 @@ class PhotoViewCoreState extends State<PhotoViewCore>
     widget.onTapDown?.call(context, details, controller.value);
   }
 
+  void onLongPress() {
+    widget.onLongPress?.call(context, controller.value);
+  }
+
   @override
   Widget build(BuildContext context) {
     // Check if we need a recalc on the scale
@@ -338,7 +497,7 @@ class PhotoViewCoreState extends State<PhotoViewCore>
               child: _buildHero(activeFilterQuality),
             );
 
-            final child = Container(
+            Widget child = Container(
               constraints: widget.tightMode
                   ? BoxConstraints.tight(scaleBoundaries.childSize * scale)
                   : null,
@@ -356,8 +515,8 @@ class PhotoViewCoreState extends State<PhotoViewCore>
               return child;
             }
 
-            return PhotoViewGestureDetector(
-              onDoubleTap: nextScaleState,
+            child = PhotoViewGestureDetector(
+              onDoubleTap: widget.disableDoubleTap ? null : nextScaleState,
               onScaleStart: onScaleStart,
               onScaleUpdate: onScaleUpdate,
               onScaleEnd: onScaleEnd,
@@ -368,8 +527,74 @@ class PhotoViewCoreState extends State<PhotoViewCore>
               onTapDown: widget.onTapDown != null
                   ? (details) => widget.onTapDown!(context, details, value)
                   : null,
+              onLongPress: widget.onLongPress != null ? onLongPress : null,
               child: child,
             );
+
+            child = Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerSignal: _onPointerSignal,
+              onPointerPanZoomUpdate: _onPointerPanZoomUpdate,
+              onPointerDown: (event) {
+                if (event.kind != PointerDeviceKind.mouse ||
+                    event.buttons != kPrimaryMouseButton) {
+                  return;
+                }
+                _lastMouseLocalPosition = event.localPosition;
+                final hovering = _hitTestContent(event.localPosition);
+                setState(() {
+                  _isMouseDragging = hovering;
+                  _isMouseHoveringContent = hovering;
+                });
+              },
+              onPointerUp: (event) {
+                if (event.kind != PointerDeviceKind.mouse) {
+                  return;
+                }
+                _lastMouseLocalPosition = event.localPosition;
+                setState(() {
+                  _isMouseDragging = false;
+                });
+                _updateMouseHoverState(event.localPosition);
+              },
+              onPointerCancel: (event) {
+                if (event.kind != PointerDeviceKind.mouse) {
+                  return;
+                }
+                setState(() {
+                  _isMouseDragging = false;
+                });
+              },
+              child: MouseRegion(
+                opaque: false,
+                hitTestBehavior: HitTestBehavior.translucent,
+                cursor: _isMouseDragging
+                    ? SystemMouseCursors.grabbing
+                    : _isMouseHoveringContent
+                        ? SystemMouseCursors.grab
+                        : MouseCursor.defer,
+                onHover: (event) {
+                  _lastMouseLocalPosition = event.localPosition;
+                  _updateMouseHoverState(event.localPosition);
+                },
+                onEnter: (event) {
+                  _lastMouseLocalPosition = event.localPosition;
+                  _updateMouseHoverState(event.localPosition);
+                },
+                onExit: (event) {
+                  _lastMouseLocalPosition = null;
+                  if (_isMouseDragging || _isMouseHoveringContent) {
+                    setState(() {
+                      _isMouseDragging = false;
+                      _isMouseHoveringContent = false;
+                    });
+                  }
+                },
+                child: child,
+              ),
+            );
+
+            return child;
           } else {
             return Container();
           }

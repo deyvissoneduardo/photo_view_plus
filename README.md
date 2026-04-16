@@ -15,7 +15,7 @@ interaction policies.
 
 ```yaml
 dependencies:
-  photo_view: ^0.15.0
+  photo_view: ^1.1.0
 ```
 
 ## What's New
@@ -26,9 +26,14 @@ dependencies:
 - new `PhotoViewGalleryOptions` for gallery preload and retention
 - richer customization with `overlayBuilder`, `backgroundBuilder`,
   `loadingStateBuilder`, and `errorStateBuilder`
+- `childWrapper` for wrapping the final rendered widget in single view or gallery
+- new gesture callbacks: `onLongPress`, `onScaleStart`, and `onScaleUpdate`
+- `disableDoubleTap` to keep pan and pinch active while disabling the internal double tap zoom cycle
+- `PhotoViewComputedScale.containedNoScaleUp` for contain-fit without enlarging smaller assets
 - injectable `PhotoViewInteractionPolicy` for clamp, gesture-end, and dynamic
   filter quality rules
 - gallery page option caching and configurable image preloading
+- desktop/web pointer support with wheel pan, `Ctrl+scroll` zoom, trackpad pan/zoom, and contextual cursors
 - internal architecture split into `ui/`, `domain/`, `data/`, `core/`, and
   `shared/`
 
@@ -83,6 +88,7 @@ PhotoView(
 - `tightMode`
 - `filterQuality`
 - `disableGestures`
+- `disableDoubleTap`
 - `enablePanAlways`
 - `strictScale`
 - `interactionPolicy`
@@ -90,6 +96,24 @@ PhotoView(
 - `backgroundBuilder`
 - `loadingStateBuilder`
 - `errorStateBuilder`
+- `childWrapper`
+
+## New Interaction Hooks
+
+```dart
+PhotoView(
+  imageProvider: provider,
+  options: const PhotoViewOptions(disableDoubleTap: true),
+  onLongPress: (context, value) {
+    debugPrint('long press at scale ${value.scale}');
+  },
+  onScaleStart: (context, details, value) {},
+  onScaleUpdate: (context, details, value) {},
+);
+```
+
+For desktop and web, mouse wheel pan, `Ctrl + scroll` zoom-to-cursor, and
+trackpad pan/zoom now work out of the box.
 
 ## Gallery
 
@@ -129,11 +153,50 @@ PhotoViewGallery.builder(
 - `allowImplicitScrolling`
 - `pageSnapping`
 - shared `options` for all pages
+- shared `childWrapper` for all pages
 
 `PhotoViewGalleryPageOptions` now also accepts:
 
 - `pageKey`
 - `options`
+- `childWrapper`
+- `disableDoubleTap`
+- `strictScale`
+- `onLongPress`
+- `onScaleStart`
+- `onScaleUpdate`
+
+## Wrapping The Final Child
+
+Use `childWrapper` when you need interactive UI around the final rendered
+result instead of a passive overlay:
+
+```dart
+PhotoViewGallery.builder(
+  itemCount: items.length,
+  options: PhotoViewGalleryOptions(
+    childWrapper: (context, index, child) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          child,
+          Positioned(
+            top: 16,
+            right: 16,
+            child: IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    },
+  ),
+  builder: (context, index) => PhotoViewGalleryPageOptions(
+    imageProvider: AssetImage(items[index]),
+  ),
+);
+```
 
 ## Interaction Policies
 
@@ -189,6 +252,15 @@ PhotoView(
   minScale: PhotoViewComputedScale.contained * 0.8,
   maxScale: PhotoViewComputedScale.covered * 1.8,
   initialScale: PhotoViewScale.contained,
+);
+```
+
+There is also a no-upscale fit mode:
+
+```dart
+PhotoView(
+  imageProvider: provider,
+  initialScale: PhotoViewComputedScale.containedNoScaleUp,
 );
 ```
 
@@ -290,6 +362,20 @@ The current package state is validated with:
 
 - `flutter analyze`
 - `flutter test`
+
+The automated suite currently covers:
+
+- controller and scale-state controller behavior
+- typed scale resolution, including `PhotoViewComputedScale.containedNoScaleUp`
+- `PhotoViewOptions` hooks such as `overlayBuilder` and `childWrapper`
+- gesture callbacks: `onLongPress`, `onScaleStart`, and `onScaleUpdate`
+- `disableDoubleTap` behavior in single view and gallery page overrides
+- `enablePanAlways` drag behavior
+- gallery preload, page-option caching, and `childWrapper`
+- desktop/web pointer interactions:
+  `PointerScrollEvent` pan, `Ctrl + scroll` zoom, and trackpad
+  `PointerPanZoomUpdateEvent`
+- error-state rendering with `heroAttributes` still keeping a `Hero` in the tree
 
 ## Example App
 

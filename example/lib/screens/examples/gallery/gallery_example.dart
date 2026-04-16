@@ -132,10 +132,36 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
           alignment: Alignment.bottomRight,
           children: <Widget>[
             PhotoViewGallery.builder(
-              options: const PhotoViewGalleryOptions(
+              options: PhotoViewGalleryOptions(
                 preloadPagesCount: 2,
                 pageRetentionPolicy:
                     PhotoViewGalleryPageRetentionPolicy.keepAlive,
+                childWrapper: (context, index, child) => Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    child,
+                    Positioned(
+                      top: 24,
+                      right: 24,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            '#${index + 1}',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               scrollPhysics: const BouncingScrollPhysics(),
               builder: _buildItem,
@@ -188,6 +214,7 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
             maxScale: PhotoViewComputedScale.covered * 4.1,
             heroAttributes: PhotoViewHeroAttributes(tag: item.id),
             options: PhotoViewOptions(
+              disableDoubleTap: true,
               overlayBuilder: (_, details) => Align(
                 alignment: Alignment.bottomRight,
                 child: Padding(
@@ -199,6 +226,9 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
                 ),
               ),
             ),
+            onLongPress: (_, value) {
+              debugPrint('Long press at scale: ${value.scale}');
+            },
           );
   }
 }

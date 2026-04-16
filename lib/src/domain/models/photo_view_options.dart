@@ -23,6 +23,17 @@ typedef PhotoViewErrorStateBuilder = Widget Function(
   PhotoViewErrorDetails details,
 );
 
+typedef PhotoViewChildWrapper = Widget Function(
+  BuildContext context,
+  Widget child,
+);
+
+typedef PhotoViewGalleryChildWrapper = Widget Function(
+  BuildContext context,
+  int index,
+  Widget child,
+);
+
 @immutable
 class PhotoViewOverlayDetails {
   const PhotoViewOverlayDetails({
@@ -82,6 +93,7 @@ class PhotoViewOptions {
     this.tightMode,
     this.filterQuality,
     this.disableGestures,
+    this.disableDoubleTap,
     this.enablePanAlways,
     this.strictScale,
     this.interactionPolicy,
@@ -89,6 +101,7 @@ class PhotoViewOptions {
     this.backgroundBuilder,
     this.loadingStateBuilder,
     this.errorStateBuilder,
+    this.childWrapper,
   });
 
   final BoxDecoration? backgroundDecoration;
@@ -98,6 +111,7 @@ class PhotoViewOptions {
   final bool? tightMode;
   final FilterQuality? filterQuality;
   final bool? disableGestures;
+  final bool? disableDoubleTap;
   final bool? enablePanAlways;
   final bool? strictScale;
   final PhotoViewInteractionPolicy? interactionPolicy;
@@ -105,6 +119,7 @@ class PhotoViewOptions {
   final PhotoViewBackgroundBuilder? backgroundBuilder;
   final PhotoViewLoadingStateBuilder? loadingStateBuilder;
   final PhotoViewErrorStateBuilder? errorStateBuilder;
+  final PhotoViewChildWrapper? childWrapper;
 
   PhotoViewOptions copyWith({
     BoxDecoration? backgroundDecoration,
@@ -114,6 +129,7 @@ class PhotoViewOptions {
     bool? tightMode,
     FilterQuality? filterQuality,
     bool? disableGestures,
+    bool? disableDoubleTap,
     bool? enablePanAlways,
     bool? strictScale,
     PhotoViewInteractionPolicy? interactionPolicy,
@@ -121,6 +137,7 @@ class PhotoViewOptions {
     PhotoViewBackgroundBuilder? backgroundBuilder,
     PhotoViewLoadingStateBuilder? loadingStateBuilder,
     PhotoViewErrorStateBuilder? errorStateBuilder,
+    PhotoViewChildWrapper? childWrapper,
   }) {
     return PhotoViewOptions(
       backgroundDecoration: backgroundDecoration ?? this.backgroundDecoration,
@@ -131,6 +148,7 @@ class PhotoViewOptions {
       tightMode: tightMode ?? this.tightMode,
       filterQuality: filterQuality ?? this.filterQuality,
       disableGestures: disableGestures ?? this.disableGestures,
+      disableDoubleTap: disableDoubleTap ?? this.disableDoubleTap,
       enablePanAlways: enablePanAlways ?? this.enablePanAlways,
       strictScale: strictScale ?? this.strictScale,
       interactionPolicy: interactionPolicy ?? this.interactionPolicy,
@@ -138,6 +156,7 @@ class PhotoViewOptions {
       backgroundBuilder: backgroundBuilder ?? this.backgroundBuilder,
       loadingStateBuilder: loadingStateBuilder ?? this.loadingStateBuilder,
       errorStateBuilder: errorStateBuilder ?? this.errorStateBuilder,
+      childWrapper: childWrapper ?? this.childWrapper,
     );
   }
 }
@@ -157,6 +176,7 @@ class PhotoViewGalleryOptions {
     this.preloadPagesCount,
     this.pageRetentionPolicy,
     this.options,
+    this.childWrapper,
   });
 
   final ScrollPhysics? scrollPhysics;
@@ -166,4 +186,5 @@ class PhotoViewGalleryOptions {
   final int? preloadPagesCount;
   final PhotoViewGalleryPageRetentionPolicy? pageRetentionPolicy;
   final PhotoViewOptions? options;
+  final PhotoViewGalleryChildWrapper? childWrapper;
 }

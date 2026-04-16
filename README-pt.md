@@ -15,7 +15,7 @@ políticas de interação.
 
 ```yaml
 dependencies:
-  photo_view: ^0.15.0
+  photo_view: ^1.1.0
 ```
 
 ## Novidades
@@ -26,9 +26,14 @@ dependencies:
 - novo `PhotoViewGalleryOptions` para preload e retenção na galeria
 - customização mais rica com `overlayBuilder`, `backgroundBuilder`,
   `loadingStateBuilder` e `errorStateBuilder`
+- `childWrapper` para envolver o widget final renderizado no modo simples ou na galeria
+- novos callbacks de gesto: `onLongPress`, `onScaleStart` e `onScaleUpdate`
+- `disableDoubleTap` para manter pan e pinch ativos desabilitando apenas o zoom interno por double tap
+- `PhotoViewComputedScale.containedNoScaleUp` para conter sem ampliar assets menores
 - `PhotoViewInteractionPolicy` injetável para regras de clamp, retorno após
   gesto e ajuste dinâmico de `filterQuality`
 - cache de `PhotoViewGalleryPageOptions` e preload configurável de imagens
+- suporte a ponteiro em desktop/web com pan por roda do mouse, zoom com `Ctrl+scroll`, trackpad e cursores contextuais
 - arquitetura interna organizada em `ui/`, `domain/`, `data/`, `core/` e
   `shared/`
 
@@ -83,6 +88,7 @@ PhotoView(
 - `tightMode`
 - `filterQuality`
 - `disableGestures`
+- `disableDoubleTap`
 - `enablePanAlways`
 - `strictScale`
 - `interactionPolicy`
@@ -90,6 +96,24 @@ PhotoView(
 - `backgroundBuilder`
 - `loadingStateBuilder`
 - `errorStateBuilder`
+- `childWrapper`
+
+## Novos Hooks de Interação
+
+```dart
+PhotoView(
+  imageProvider: provider,
+  options: const PhotoViewOptions(disableDoubleTap: true),
+  onLongPress: (context, value) {
+    debugPrint('long press em escala ${value.scale}');
+  },
+  onScaleStart: (context, details, value) {},
+  onScaleUpdate: (context, details, value) {},
+);
+```
+
+Em desktop e web, pan por roda do mouse, zoom com `Ctrl + scroll` e
+pan/zoom por trackpad já funcionam sem configuração extra.
 
 ## Galeria
 
@@ -129,11 +153,50 @@ PhotoViewGallery.builder(
 - `allowImplicitScrolling`
 - `pageSnapping`
 - `options` compartilhado para todas as páginas
+- `childWrapper` compartilhado para todas as páginas
 
 `PhotoViewGalleryPageOptions` agora também aceita:
 
 - `pageKey`
 - `options`
+- `childWrapper`
+- `disableDoubleTap`
+- `strictScale`
+- `onLongPress`
+- `onScaleStart`
+- `onScaleUpdate`
+
+## Envolvendo o Widget Final
+
+Use `childWrapper` quando você precisa de UI interativa em volta do resultado
+final, em vez de um overlay passivo:
+
+```dart
+PhotoViewGallery.builder(
+  itemCount: items.length,
+  options: PhotoViewGalleryOptions(
+    childWrapper: (context, index, child) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          child,
+          Positioned(
+            top: 16,
+            right: 16,
+            child: IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    },
+  ),
+  builder: (context, index) => PhotoViewGalleryPageOptions(
+    imageProvider: AssetImage(items[index]),
+  ),
+);
+```
 
 ## Políticas de Interação
 
@@ -189,6 +252,15 @@ PhotoView(
   minScale: PhotoViewComputedScale.contained * 0.8,
   maxScale: PhotoViewComputedScale.covered * 1.8,
   initialScale: PhotoViewScale.contained,
+);
+```
+
+Também existe um modo de ajuste sem upscale:
+
+```dart
+PhotoView(
+  imageProvider: provider,
+  initialScale: PhotoViewComputedScale.containedNoScaleUp,
 );
 ```
 
@@ -292,6 +364,20 @@ O estado atual do pacote foi validado com:
 
 - `flutter analyze`
 - `flutter test`
+
+A suíte automatizada atualmente cobre:
+
+- comportamento do `PhotoViewController` e do `PhotoViewScaleStateController`
+- resolução de escalas tipadas, incluindo `PhotoViewComputedScale.containedNoScaleUp`
+- hooks de `PhotoViewOptions`, como `overlayBuilder` e `childWrapper`
+- callbacks de gesto: `onLongPress`, `onScaleStart` e `onScaleUpdate`
+- comportamento de `disableDoubleTap` no widget simples e em override por página na galeria
+- arrasto com `enablePanAlways`
+- preload da galeria, cache de `PhotoViewGalleryPageOptions` e `childWrapper`
+- interações de ponteiro em desktop/web:
+  pan com `PointerScrollEvent`, zoom com `Ctrl + scroll` e trackpad com
+  `PointerPanZoomUpdateEvent`
+- renderização de erro com `heroAttributes`, mantendo `Hero` presente na árvore
 
 ## Example App
 

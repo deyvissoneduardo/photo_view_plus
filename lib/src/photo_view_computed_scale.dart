@@ -48,6 +48,9 @@ class PhotoViewComputedScale extends PhotoViewScale {
       PhotoViewComputedScale._internal(_PhotoViewComputedScaleType.contained);
   static const covered =
       PhotoViewComputedScale._internal(_PhotoViewComputedScaleType.covered);
+  static const containedNoScaleUp = PhotoViewComputedScale._internal(
+    _PhotoViewComputedScaleType.containedNoScaleUp,
+  );
 
   PhotoViewComputedScale operator *(double nextMultiplier) {
     return PhotoViewComputedScale._internal(_value, nextMultiplier);
@@ -64,6 +67,8 @@ class PhotoViewComputedScale extends PhotoViewScale {
         _scaleForContained(outerSize, childSize),
       _PhotoViewComputedScaleType.covered =>
         _scaleForCovered(outerSize, childSize),
+      _PhotoViewComputedScaleType.containedNoScaleUp =>
+        _scaleForContainedNoScaleUp(outerSize, childSize),
     };
 
     return baseScale * multiplier;
@@ -88,6 +93,7 @@ class PhotoViewComputedScale extends PhotoViewScale {
 enum _PhotoViewComputedScaleType {
   contained,
   covered,
+  containedNoScaleUp,
 }
 
 double _scaleForContained(Size size, Size childSize) {
@@ -96,4 +102,8 @@ double _scaleForContained(Size size, Size childSize) {
 
 double _scaleForCovered(Size size, Size childSize) {
   return math.max(size.width / childSize.width, size.height / childSize.height);
+}
+
+double _scaleForContainedNoScaleUp(Size size, Size childSize) {
+  return math.min(1.0, _scaleForContained(size, childSize));
 }
