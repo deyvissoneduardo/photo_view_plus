@@ -6,8 +6,10 @@ import 'package:photo_view_example/screens/common/app_bar.dart';
 import 'package:photo_view_example/screens/examples/gallery/gallery_example_item.dart';
 
 class GalleryExample extends StatefulWidget {
+  const GalleryExample({super.key});
+
   @override
-  _GalleryExampleState createState() => _GalleryExampleState();
+  State<GalleryExample> createState() => _GalleryExampleState();
 }
 
 class _GalleryExampleState extends State<GalleryExample> {
@@ -84,6 +86,7 @@ class _GalleryExampleState extends State<GalleryExample> {
 
 class GalleryPhotoViewWrapper extends StatefulWidget {
   GalleryPhotoViewWrapper({
+    super.key,
     this.loadingBuilder,
     this.backgroundDecoration,
     this.minScale,
@@ -95,8 +98,8 @@ class GalleryPhotoViewWrapper extends StatefulWidget {
 
   final LoadingBuilder? loadingBuilder;
   final BoxDecoration? backgroundDecoration;
-  final dynamic minScale;
-  final dynamic maxScale;
+  final PhotoViewScale? minScale;
+  final PhotoViewScale? maxScale;
   final int initialIndex;
   final PageController pageController;
   final List<GalleryExampleItem> galleryItems;
@@ -129,6 +132,11 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
           alignment: Alignment.bottomRight,
           children: <Widget>[
             PhotoViewGallery.builder(
+              options: const PhotoViewGalleryOptions(
+                preloadPagesCount: 2,
+                pageRetentionPolicy:
+                    PhotoViewGalleryPageRetentionPolicy.keepAlive,
+              ),
               scrollPhysics: const BouncingScrollPhysics(),
               builder: _buildItem,
               itemCount: widget.galleryItems.length,
@@ -159,7 +167,7 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
     final GalleryExampleItem item = widget.galleryItems[index];
     return item.isSvg
         ? PhotoViewGalleryPageOptions.customChild(
-            child: Container(
+            child: SizedBox(
               width: 300,
               height: 300,
               child: SvgPicture.asset(
@@ -179,6 +187,18 @@ class _GalleryPhotoViewWrapperState extends State<GalleryPhotoViewWrapper> {
             minScale: PhotoViewComputedScale.contained * (0.5 + index / 10),
             maxScale: PhotoViewComputedScale.covered * 4.1,
             heroAttributes: PhotoViewHeroAttributes(tag: item.id),
+            options: PhotoViewOptions(
+              overlayBuilder: (_, details) => Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    details.scaleState.name,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
           );
   }
 }

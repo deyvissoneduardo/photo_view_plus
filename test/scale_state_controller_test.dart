@@ -48,9 +48,9 @@ void main() {
 
   test('controller invisible update', () {
     int count = 0;
-    final void Function() callback = () {
+    void callback() {
       count++;
-    };
+    }
 
     controller.addIgnorableListener(callback);
 

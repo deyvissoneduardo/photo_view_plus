@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/src/utils/ignorable_change_notifier.dart';
+import 'package:photo_view/src/shared/foundation/ignorable_change_notifier.dart';
 
 /// The interface in which controllers will be implemented.
 ///
@@ -22,49 +22,30 @@ import 'package:photo_view/src/utils/ignorable_change_notifier.dart';
 /// As it is a controller, whoever instantiates it, should [dispose] it afterwards.
 ///
 abstract class PhotoViewControllerBase<T extends PhotoViewControllerValue> {
-  /// The output for state/value updates. Usually a broadcast [Stream]
   Stream<T> get outputStateStream;
 
-  /// The state value before the last change or the initial state if the state has not been changed.
   late T prevValue;
 
-  /// The actual state value
   late T value;
 
-  /// Resets the state to the initial value;
   void reset();
 
-  /// Closes streams and removes eventual listeners.
   void dispose();
 
-  /// Add a listener that will ignore updates made internally
-  ///
-  /// Since it is made for internal use, it is not performatic to use more than one
-  /// listener. Prefer [outputStateStream]
   void addIgnorableListener(VoidCallback callback);
 
-  /// Remove a listener that will ignore updates made internally
-  ///
-  /// Since it is made for internal use, it is not performatic to use more than one
-  /// listener. Prefer [outputStateStream]
   void removeIgnorableListener(VoidCallback callback);
 
-  /// The position of the image in the screen given its offset after pan gestures.
   late Offset position;
 
-  /// The scale factor to transform the child (image or a customChild).
   late double? scale;
 
-  /// Nevermind this method :D, look away
   void setScaleInvisibly(double? scale);
 
-  /// The rotation factor to transform the child (image or a customChild).
   late double rotation;
 
-  /// The center of the rotation transformation. It is a coordinate referring to the absolute dimensions of the image.
   Offset? rotationFocusPoint;
 
-  /// Update multiple fields of the state with only one update streamed.
   void updateMultiple({
     Offset? position,
     double? scale,
@@ -73,7 +54,6 @@ abstract class PhotoViewControllerBase<T extends PhotoViewControllerValue> {
   });
 }
 
-/// The state value stored and streamed by [PhotoViewController].
 @immutable
 class PhotoViewControllerValue {
   const PhotoViewControllerValue({
@@ -111,13 +91,6 @@ class PhotoViewControllerValue {
   }
 }
 
-/// The default implementation of [PhotoViewControllerBase].
-///
-/// Containing a [ValueNotifier] it stores the state in the [value] field and streams
-/// updates via [outputStateStream].
-///
-/// For details of fields and methods, check [PhotoViewControllerBase].
-///
 class PhotoViewController
     implements PhotoViewControllerBase<PhotoViewControllerValue> {
   PhotoViewController({

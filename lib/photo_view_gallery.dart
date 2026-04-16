@@ -1,21 +1,17 @@
-library photo_view_gallery;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:photo_view/photo_view.dart'
     show
         LoadingBuilder,
         PhotoView,
+        PhotoViewScale,
         PhotoViewImageTapDownCallback,
         PhotoViewImageTapUpCallback,
         PhotoViewImageScaleEndCallback,
         ScaleStateCycle;
-
-import 'package:photo_view/src/controller/photo_view_controller.dart';
-import 'package:photo_view/src/controller/photo_view_scalestate_controller.dart';
-import 'package:photo_view/src/core/photo_view_gesture_detector.dart';
-import 'package:photo_view/src/photo_view_scale_state.dart';
-import 'package:photo_view/src/utils/photo_view_hero_attributes.dart';
+import 'package:photo_view/src/domain/models/models.dart';
+import 'package:photo_view/src/ui/view_models/view_models.dart';
+import 'package:photo_view/src/ui/views/views.dart';
 
 /// A type definition for a [Function] that receives a index after a page change in [PhotoViewGallery]
 typedef PhotoViewGalleryPageChangedCallback = void Function(int index);
@@ -102,8 +98,9 @@ typedef PhotoViewGalleryBuilder = PhotoViewGalleryPageOptions Function(
 class PhotoViewGallery extends StatefulWidget {
   /// Construct a gallery with static items through a list of [PhotoViewGalleryPageOptions].
   const PhotoViewGallery({
-    Key? key,
+    super.key,
     required this.pageOptions,
+    this.options,
     this.loadingBuilder,
     this.backgroundDecoration,
     this.wantKeepAlive = false,
@@ -119,16 +116,16 @@ class PhotoViewGallery extends StatefulWidget {
     this.allowImplicitScrolling = false,
     this.pageSnapping = true,
   })  : itemCount = null,
-        builder = null,
-        super(key: key);
+        builder = null;
 
   /// Construct a gallery with dynamic items.
   ///
   /// The builder must return a [PhotoViewGalleryPageOptions].
   const PhotoViewGallery.builder({
-    Key? key,
+    super.key,
     required this.itemCount,
     required this.builder,
+    this.options,
     this.loadingBuilder,
     this.backgroundDecoration,
     this.wantKeepAlive = false,
@@ -145,11 +142,11 @@ class PhotoViewGallery extends StatefulWidget {
     this.pageSnapping = true,
   })  : pageOptions = null,
         assert(itemCount != null),
-        assert(builder != null),
-        super(key: key);
+        assert(builder != null);
 
   /// A list of options to describe the items in the gallery
   final List<PhotoViewGalleryPageOptions>? pageOptions;
+  final PhotoViewGalleryOptions? options;
 
   /// The count of items in the gallery, only used when constructed via [PhotoViewGallery.builder]
   final int? itemCount;
@@ -209,6 +206,8 @@ class PhotoViewGallery extends StatefulWidget {
 class _PhotoViewGalleryState extends State<PhotoViewGallery> {
   late final PageController _controller =
       widget.pageController ?? PageController();
+  final Map<int, PhotoViewGalleryPageOptions> _pageOptionCache =
+      <int, PhotoViewGalleryPageOptions>{};
 
   void scaleStateChangedCallback(PhotoViewScaleState scaleState) {
     if (widget.scaleStateChangedCallback != null) {
@@ -227,36 +226,98 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
     return widget.pageOptions!.length;
   }
 
+  PhotoViewGalleryOptions get _resolvedGalleryOptions {
+    final options = widget.options ?? const PhotoViewGalleryOptions();
+    return PhotoViewGalleryOptions(
+      scrollPhysics: widget.scrollPhysics ?? options.scrollPhysics,
+      scrollDirection: widget.scrollDirection,
+      allowImplicitScrolling:
+          widget.allowImplicitScrolling || (options.allowImplicitScrolling ?? false),
+      pageSnapping: widget.pageSnapping,
+      preloadPagesCount: options.preloadPagesCount ?? 1,
+      pageRetentionPolicy:
+          options.pageRetentionPolicy ??
+              (widget.wantKeepAlive
+                  ? PhotoViewGalleryPageRetentionPolicy.keepAlive
+                  : PhotoViewGalleryPageRetentionPolicy.reset),
+      options: options.options,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheAround(_controller.initialPage);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final galleryOptions = _resolvedGalleryOptions;
     // Enable corner hit test
     return PhotoViewGestureDetectorScope(
-      axis: widget.scrollDirection,
+      axis: galleryOptions.scrollDirection ?? widget.scrollDirection,
       child: PageView.builder(
         reverse: widget.reverse,
         controller: _controller,
-        onPageChanged: widget.onPageChanged,
+        onPageChanged: (index) {
+          _precacheAround(index);
+          widget.onPageChanged?.call(index);
+        },
         itemCount: itemCount,
         itemBuilder: _buildItem,
-        scrollDirection: widget.scrollDirection,
-        physics: widget.scrollPhysics,
-        allowImplicitScrolling: widget.allowImplicitScrolling,
-        pageSnapping: widget.pageSnapping,
+        scrollDirection: galleryOptions.scrollDirection ?? widget.scrollDirection,
+        physics: galleryOptions.scrollPhysics ?? widget.scrollPhysics,
+        allowImplicitScrolling: galleryOptions.allowImplicitScrolling ??
+            widget.allowImplicitScrolling,
+        pageSnapping: galleryOptions.pageSnapping ?? widget.pageSnapping,
       ),
     );
   }
 
   Widget _buildItem(BuildContext context, int index) {
     final pageOption = _buildPageOption(context, index);
+    final globalOptions = _resolvedGalleryOptions.options ?? const PhotoViewOptions();
+    final resolvedOptions = globalOptions.copyWith(
+      backgroundDecoration:
+          pageOption.options?.backgroundDecoration ?? globalOptions.backgroundDecoration,
+      wantKeepAlive:
+          (pageOption.options?.wantKeepAlive ?? false) ||
+              ((_resolvedGalleryOptions.pageRetentionPolicy ??
+                          PhotoViewGalleryPageRetentionPolicy.reset) ==
+                      PhotoViewGalleryPageRetentionPolicy.keepAlive),
+      customSize: widget.customSize ?? globalOptions.customSize,
+      gestureDetectorBehavior:
+          pageOption.gestureDetectorBehavior ??
+              pageOption.options?.gestureDetectorBehavior ??
+              globalOptions.gestureDetectorBehavior,
+      tightMode:
+          pageOption.tightMode ?? pageOption.options?.tightMode ?? globalOptions.tightMode,
+      filterQuality: pageOption.filterQuality ??
+          pageOption.options?.filterQuality ??
+          globalOptions.filterQuality,
+      disableGestures: pageOption.disableGestures ??
+          pageOption.options?.disableGestures ??
+          globalOptions.disableGestures,
+      enablePanAlways: pageOption.options?.enablePanAlways ?? globalOptions.enablePanAlways,
+      strictScale: pageOption.options?.strictScale ?? globalOptions.strictScale,
+      interactionPolicy:
+          pageOption.options?.interactionPolicy ?? globalOptions.interactionPolicy,
+      overlayBuilder: pageOption.options?.overlayBuilder ?? globalOptions.overlayBuilder,
+      backgroundBuilder:
+          pageOption.options?.backgroundBuilder ?? globalOptions.backgroundBuilder,
+      loadingStateBuilder:
+          pageOption.options?.loadingStateBuilder ?? globalOptions.loadingStateBuilder,
+      errorStateBuilder:
+          pageOption.options?.errorStateBuilder ?? globalOptions.errorStateBuilder,
+    );
     final isCustomChild = pageOption.child != null;
 
     final PhotoView photoView = isCustomChild
         ? PhotoView.customChild(
-            key: ObjectKey(index),
-            child: pageOption.child,
+            key: pageOption.pageKey ?? ObjectKey(index),
+            options: resolvedOptions,
             childSize: pageOption.childSize,
             backgroundDecoration: widget.backgroundDecoration,
-            wantKeepAlive: widget.wantKeepAlive,
             controller: pageOption.controller,
             scaleStateController: pageOption.scaleStateController,
             customSize: widget.customSize,
@@ -270,18 +331,15 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
             onTapUp: pageOption.onTapUp,
             onTapDown: pageOption.onTapDown,
             onScaleEnd: pageOption.onScaleEnd,
-            gestureDetectorBehavior: pageOption.gestureDetectorBehavior,
-            tightMode: pageOption.tightMode,
-            filterQuality: pageOption.filterQuality,
             basePosition: pageOption.basePosition,
-            disableGestures: pageOption.disableGestures,
+            child: pageOption.child,
           )
         : PhotoView(
-            key: ObjectKey(index),
+            key: pageOption.pageKey ?? ObjectKey(index),
+            options: resolvedOptions,
             imageProvider: pageOption.imageProvider,
             loadingBuilder: widget.loadingBuilder,
             backgroundDecoration: widget.backgroundDecoration,
-            wantKeepAlive: widget.wantKeepAlive,
             controller: pageOption.controller,
             scaleStateController: pageOption.scaleStateController,
             customSize: widget.customSize,
@@ -297,11 +355,7 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
             onTapUp: pageOption.onTapUp,
             onTapDown: pageOption.onTapDown,
             onScaleEnd: pageOption.onScaleEnd,
-            gestureDetectorBehavior: pageOption.gestureDetectorBehavior,
-            tightMode: pageOption.tightMode,
-            filterQuality: pageOption.filterQuality,
             basePosition: pageOption.basePosition,
-            disableGestures: pageOption.disableGestures,
             errorBuilder: pageOption.errorBuilder,
           );
 
@@ -312,10 +366,34 @@ class _PhotoViewGalleryState extends State<PhotoViewGallery> {
 
   PhotoViewGalleryPageOptions _buildPageOption(
       BuildContext context, int index) {
+    final cached = _pageOptionCache[index];
+    if (cached != null) {
+      return cached;
+    }
     if (widget._isBuilder) {
-      return widget.builder!(context, index);
+      final option = widget.builder!(context, index);
+      _pageOptionCache[index] = option;
+      return option;
     }
     return widget.pageOptions![index];
+  }
+
+  void _precacheAround(int centerIndex) {
+    final preloadCount = _resolvedGalleryOptions.preloadPagesCount ?? 1;
+    for (var offset = 0; offset <= preloadCount; offset++) {
+      _precacheIndex(centerIndex - offset);
+      _precacheIndex(centerIndex + offset);
+    }
+  }
+
+  void _precacheIndex(int index) {
+    if (index < 0 || index >= itemCount) {
+      return;
+    }
+    final option = _buildPageOption(context, index);
+    if (option.imageProvider != null) {
+      precacheImage(option.imageProvider!, context);
+    }
   }
 }
 
@@ -327,6 +405,8 @@ class PhotoViewGalleryPageOptions {
   PhotoViewGalleryPageOptions({
     Key? key,
     required this.imageProvider,
+    this.pageKey,
+    this.options,
     this.heroAttributes,
     this.semanticLabel,
     this.minScale,
@@ -349,6 +429,8 @@ class PhotoViewGalleryPageOptions {
         assert(imageProvider != null);
 
   PhotoViewGalleryPageOptions.customChild({
+    this.pageKey,
+    this.options,
     required this.child,
     this.semanticLabel,
     this.childSize,
@@ -372,6 +454,8 @@ class PhotoViewGalleryPageOptions {
 
   /// Mirror to [PhotoView.imageProvider]
   final ImageProvider? imageProvider;
+  final Key? pageKey;
+  final PhotoViewOptions? options;
 
   /// Mirror to [PhotoView.heroAttributes]
   final PhotoViewHeroAttributes? heroAttributes;
@@ -380,13 +464,13 @@ class PhotoViewGalleryPageOptions {
   final String? semanticLabel;
 
   /// Mirror to [PhotoView.minScale]
-  final dynamic minScale;
+  final PhotoViewScale? minScale;
 
   /// Mirror to [PhotoView.maxScale]
-  final dynamic maxScale;
+  final PhotoViewScale? maxScale;
 
   /// Mirror to [PhotoView.initialScale]
-  final dynamic initialScale;
+  final PhotoViewScale? initialScale;
 
   /// Mirror to [PhotoView.controller]
   final PhotoViewController? controller;

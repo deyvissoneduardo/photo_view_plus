@@ -6,12 +6,9 @@ import 'package:photo_view/photo_view.dart'
         PhotoViewScaleStateController,
         ScaleStateCycle;
 import 'package:photo_view/src/core/photo_view_core.dart';
-import 'package:photo_view/src/photo_view_scale_state.dart';
-import 'package:photo_view/src/utils/photo_view_utils.dart';
+import 'package:photo_view/src/domain/models/models.dart';
+import 'package:photo_view/src/domain/use_cases/use_cases.dart';
 
-/// A  class to hold internal layout logic to sync both controller states
-///
-/// It reacts to layout changes (eg: enter landscape or widget resize) and syncs the two controllers.
 mixin PhotoViewControllerDelegate on State<PhotoViewCore> {
   PhotoViewControllerBase get controller => widget.controller;
 
@@ -23,9 +20,9 @@ mixin PhotoViewControllerDelegate on State<PhotoViewCore> {
   ScaleStateCycle get scaleStateCycle => widget.scaleStateCycle;
 
   Alignment get basePosition => widget.basePosition;
+  PhotoViewInteractionPolicy get interactionPolicy => widget.interactionPolicy;
   Function(double prevScale, double nextScale)? _animateScale;
 
-  /// Mark if scale need recalculation, useful for scale boundaries changes.
   bool markNeedsScaleRecalc = true;
 
   void initDelegate() {
@@ -56,7 +53,7 @@ mixin PhotoViewControllerDelegate on State<PhotoViewCore> {
   }
 
   void addAnimateOnScaleStateUpdate(
-    void animateScale(double prevScale, double nextScale),
+    void Function(double prevScale, double nextScale) animateScale,
   ) {
     _animateScale = animateScale;
   }
@@ -79,7 +76,6 @@ mixin PhotoViewControllerDelegate on State<PhotoViewCore> {
   Offset get position => controller.position;
 
   double get scale {
-    // for figuring out initial scale
     final needsRecalc = markNeedsScaleRecalc &&
         !scaleStateController.scaleState.isScaleStateZooming;
 
@@ -152,57 +148,29 @@ mixin PhotoViewControllerDelegate on State<PhotoViewCore> {
     scaleStateController.scaleState = nextScaleState;
   }
 
+  PhotoViewLayoutMetrics layoutMetrics({Offset? position, double? scale}) {
+    return PhotoViewLayoutMetrics(
+      scaleBoundaries: scaleBoundaries,
+      position: position ?? this.position,
+      scale: scale ?? this.scale,
+      basePosition: basePosition,
+    );
+  }
+
   CornersRange cornersX({double? scale}) {
-    final double _scale = scale ?? this.scale;
-
-    final double computedWidth = scaleBoundaries.childSize.width * _scale;
-    final double screenWidth = scaleBoundaries.outerSize.width;
-
-    final double positionX = basePosition.x;
-    final double widthDiff = computedWidth - screenWidth;
-
-    final double minX = ((positionX - 1).abs() / 2) * widthDiff * -1;
-    final double maxX = ((positionX + 1).abs() / 2) * widthDiff;
-    return CornersRange(minX, maxX);
+    return layoutMetrics(scale: scale).cornersX();
   }
 
   CornersRange cornersY({double? scale}) {
-    final double _scale = scale ?? this.scale;
-
-    final double computedHeight = scaleBoundaries.childSize.height * _scale;
-    final double screenHeight = scaleBoundaries.outerSize.height;
-
-    final double positionY = basePosition.y;
-    final double heightDiff = computedHeight - screenHeight;
-
-    final double minY = ((positionY - 1).abs() / 2) * heightDiff * -1;
-    final double maxY = ((positionY + 1).abs() / 2) * heightDiff;
-    return CornersRange(minY, maxY);
+    return layoutMetrics(scale: scale).cornersY();
   }
 
   Offset clampPosition({Offset? position, double? scale}) {
-    final double _scale = scale ?? this.scale;
-    final Offset _position = position ?? this.position;
-
-    final double computedWidth = scaleBoundaries.childSize.width * _scale;
-    final double computedHeight = scaleBoundaries.childSize.height * _scale;
-
-    final double screenWidth = scaleBoundaries.outerSize.width;
-    final double screenHeight = scaleBoundaries.outerSize.height;
-
-    double finalX = 0.0;
-    if (screenWidth < computedWidth) {
-      final cornersX = this.cornersX(scale: _scale);
-      finalX = _position.dx.clamp(cornersX.min, cornersX.max);
-    }
-
-    double finalY = 0.0;
-    if (screenHeight < computedHeight) {
-      final cornersY = this.cornersY(scale: _scale);
-      finalY = _position.dy.clamp(cornersY.min, cornersY.max);
-    }
-
-    return Offset(finalX, finalY);
+    final metrics = layoutMetrics(position: position, scale: scale);
+    return interactionPolicy.clampPosition(
+      metrics,
+      position ?? this.position,
+    );
   }
 
   @override

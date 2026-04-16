@@ -1,11 +1,12 @@
 analyzer:
   errors:
     mixin_inherits_from_not_object: ignore
+include: package:flutter_lints/flutter.yaml
+
 linter:
   rules:
     - always_declare_return_types
     - always_put_control_body_on_new_line
-    - always_require_non_null_named_parameters
     - annotate_overrides
     - avoid_classes_with_only_static_members
     - avoid_empty_else
@@ -46,7 +47,6 @@ linter:
     - prefer_const_declarations
     - prefer_const_literals_to_create_immutables
     - prefer_contains
-    - prefer_equal_for_default_values
     - prefer_final_fields
     - prefer_final_locals
     - prefer_foreach
@@ -68,7 +68,7 @@ linter:
     - unnecessary_overrides
     - unnecessary_parenthesis
     - unnecessary_this
+    - use_super_parameters
     - unrelated_type_equality_checks
     - use_rethrow_when_possible
-    - unnecessary_new
 

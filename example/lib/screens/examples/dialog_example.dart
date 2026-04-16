@@ -3,21 +3,21 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view_example/screens/common/app_bar.dart';
 
 class DialogExample extends StatefulWidget {
+  const DialogExample({super.key});
+
   @override
-  _DialogExampleState createState() => _DialogExampleState();
+  State<DialogExample> createState() => _DialogExampleState();
 }
 
 class _DialogExampleState extends State<DialogExample> {
   void openDialog(BuildContext context) => showDialog(
         context: context,
         builder: (BuildContext context) {
-          return Dialog(
-            child: Container(
-              child: PhotoView(
-                tightMode: true,
-                imageProvider: const AssetImage("assets/large-image.jpg"),
-                heroAttributes: const PhotoViewHeroAttributes(tag: "someTag"),
-              ),
+          return const Dialog(
+            child: PhotoView(
+              tightMode: true,
+              imageProvider: AssetImage("assets/large-image.jpg"),
+              heroAttributes: PhotoViewHeroAttributes(tag: "someTag"),
             ),
           );
         },
@@ -45,15 +45,15 @@ class _DialogExampleState extends State<DialogExample> {
         context: context,
         shape: const ContinuousRectangleBorder(),
         builder: (BuildContext context) {
-          return SafeArea(
-            child: Container(
+          return const SafeArea(
+            child: SizedBox(
               height: 250,
               child: PhotoViewGestureDetectorScope(
                 axis: Axis.vertical,
                 child: PhotoView(
                   tightMode: true,
-                  imageProvider: const AssetImage("assets/large-image.jpg"),
-                  heroAttributes: const PhotoViewHeroAttributes(tag: "someTag"),
+                  imageProvider: AssetImage("assets/large-image.jpg"),
+                  heroAttributes: PhotoViewHeroAttributes(tag: "someTag"),
                 ),
               ),
             ),

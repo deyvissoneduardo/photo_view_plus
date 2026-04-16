@@ -12,6 +12,8 @@ import 'package:photo_view_example/screens/examples/rotation_examples.dart';
 import 'examples/network_images.dart';
 
 class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,7 +26,7 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20.0),
             child: const Text(
               "See bellow examples of some of the most common photo view usage cases",
-              style: const TextStyle(fontSize: 18.0),
+              style: TextStyle(fontSize: 18.0),
             ),
           ),
           Expanded(
@@ -36,7 +38,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CommonUseCasesExamples(),
+                        builder: (context) => const CommonUseCasesExamples(),
                       ),
                     );
                   },
@@ -48,7 +50,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => GalleryExample(),
+                        builder: (_) => const GalleryExample(),
                       ),
                     );
                   },
@@ -60,7 +62,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => HeroExample(),
+                        builder: (_) => const HeroExample(),
                       ),
                     );
                   },
@@ -72,7 +74,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => NetworkExamples(),
+                        builder: (context) => const NetworkExamples(),
                       ),
                     );
                   },
@@ -84,7 +86,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ControllerExample(),
+                        builder: (context) => const ControllerExample(),
                       ),
                     );
                   },
@@ -96,7 +98,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => InlineExample(),
+                        builder: (context) => const InlineExample(),
                       ),
                     );
                   },
@@ -108,7 +110,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => CustomChildExample(),
+                        builder: (_) => const CustomChildExample(),
                       ),
                     );
                   },
@@ -120,7 +122,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DialogExample(),
+                        builder: (context) => const DialogExample(),
                       ),
                     );
                   },
@@ -132,7 +134,7 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => GestureRotationExample(),
+                        builder: (context) => const GestureRotationExample(),
                       ),
                     );
                   },
@@ -144,7 +146,8 @@ class HomeScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProgrammaticRotationExample(),
+                        builder: (context) =>
+                            const ProgrammaticRotationExample(),
                       ),
                     );
                   },
@@ -162,15 +165,15 @@ class HomeScreen extends StatelessWidget {
       {required String text, required VoidCallback onPressed}) {
     return TextButton(
       style: ButtonStyle(
-        padding: MaterialStateProperty.all(
+        padding: WidgetStateProperty.all(
           const EdgeInsets.symmetric(vertical: 25.0, horizontal: 20.0),
         ),
       ),
+      onPressed: onPressed,
       child: Text(
         text,
         style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.w700),
       ),
-      onPressed: onPressed,
     );
   }
 }

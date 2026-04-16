@@ -3,6 +3,8 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view_example/screens/common/app_bar.dart';
 
 class HeroExample extends StatelessWidget {
+  const HeroExample({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ExampleAppBarLayout(
@@ -22,15 +24,13 @@ class HeroExample extends StatelessWidget {
               ),
             );
           },
-          child: Container(
-            child: Hero(
-              tag: "someTag",
-              child: Image.network(
-                "https://source.unsplash.com/4900x3600/?camera,paper",
-                width: 350.0,
-                loadingBuilder: (_, child, chunk) =>
-                    chunk != null ? const Text("loading") : child,
-              ),
+          child: Hero(
+            tag: "someTag",
+            child: Image.network(
+              "https://source.unsplash.com/4900x3600/?camera,paper",
+              width: 350.0,
+              loadingBuilder: (_, child, chunk) =>
+                  chunk != null ? const Text("loading") : child,
             ),
           ),
         ),
@@ -41,6 +41,7 @@ class HeroExample extends StatelessWidget {
 
 class HeroPhotoViewRouteWrapper extends StatelessWidget {
   const HeroPhotoViewRouteWrapper({
+    super.key,
     required this.imageProvider,
     this.backgroundDecoration,
     this.minScale,
@@ -49,15 +50,12 @@ class HeroPhotoViewRouteWrapper extends StatelessWidget {
 
   final ImageProvider imageProvider;
   final BoxDecoration? backgroundDecoration;
-  final dynamic minScale;
-  final dynamic maxScale;
+  final PhotoViewScale? minScale;
+  final PhotoViewScale? maxScale;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints.expand(
-        height: MediaQuery.of(context).size.height,
-      ),
+    return SizedBox.expand(
       child: PhotoView(
         imageProvider: imageProvider,
         backgroundDecoration: backgroundDecoration,

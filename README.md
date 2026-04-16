@@ -1,133 +1,302 @@
-# Flutter Photo View 
+# Flutter Photo View
 
-[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view/actions) [![Pub](https://img.shields.io/pub/v/photo_view.svg?style=popout)](https://pub.dartlang.org/packages/photo_view) [![Chat](https://img.shields.io/discord/509714518008528896)](https://discord.gg/pxrBmy4)
+[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view/actions)
+[![Pub](https://img.shields.io/pub/v/photo_view.svg?style=popout)](https://pub.dartlang.org/packages/photo_view)
 
-A simple zoomable image/content widget for Flutter.
+`photo_view` provides a gesture-aware zoomable widget for images and custom
+content. This fork is updated for modern Flutter, adds a stronger typed API,
+and exposes new configuration points for overlays, gallery behavior, and
+interaction policies.
 
-PhotoView enables images to become able to zoom and pan with user gestures such as pinch, rotate and drag.
+## Requirements
 
-It also can show any widget instead of an image, such as Container, Text or a SVG. 
+- Flutter `>=3.14.5`
+- Dart `>=3.1.0`
 
-Even though being super simple to use, PhotoView is extremely customizable though its options and the controllers. 
+```yaml
+dependencies:
+  photo_view: ^0.15.0
+```
 
+## What's New
 
-## Installation
+- Flutter 3.14.5+ and Dart 3.1+ baseline
+- typed scale API with `PhotoViewScale.fixed(...)`
+- new `PhotoViewOptions` for consolidated widget configuration
+- new `PhotoViewGalleryOptions` for gallery preload and retention
+- richer customization with `overlayBuilder`, `backgroundBuilder`,
+  `loadingStateBuilder`, and `errorStateBuilder`
+- injectable `PhotoViewInteractionPolicy` for clamp, gesture-end, and dynamic
+  filter quality rules
+- gallery page option caching and configurable image preloading
+- internal architecture split into `ui/`, `domain/`, `data/`, `core/`, and
+  `shared/`
 
-Add `photo_view` as a dependency in your pubspec.yaml file.
+## Basic Usage
 
-Import Photo View:
 ```dart
 import 'package:photo_view/photo_view.dart';
+
+PhotoView(
+  imageProvider: const AssetImage('assets/large-image.jpg'),
+  initialScale: PhotoViewScale.contained,
+  minScale: PhotoViewScale.contained * 0.8,
+  maxScale: PhotoViewScale.covered * 1.8,
+);
 ```
 
-## Docs & API
-
-The [API Docs](https://pub.dartlang.org/documentation/photo_view/latest/photo_view/photo_view-library.html) some detailed information about how to use PhotoView.
-
-
-If you want to see it in practice, check the [example app](https://github.com/bluefireteam/photo_view/tree/master/example/lib) that explores most of Photo View's use cases or download the latest version apk on the [releases page](https://github.com/bluefireteam/photo_view/releases)
- 
-
-## (Very) Basic usage
-
-Given a `ImageProvider imageProvider` (such as [AssetImage](https://docs.flutter.io/flutter/painting/AssetImage-class.html) or [NetworkImage](https://docs.flutter.io/flutter/painting/NetworkImage-class.html)):
+Use `PhotoView.customChild` to zoom any widget:
 
 ```dart
-@override
-Widget build(BuildContext context) {
-  return Container(
-    child: PhotoView(
-      imageProvider: AssetImage("assets/large-image.jpg"),
-    )
-  );
-}
+PhotoView.customChild(
+  child: const FlutterLogo(size: 200),
+  childSize: const Size(200, 200),
+  initialScale: const PhotoViewScale.fixed(1),
+);
 ```
 
-Result: 
+## Configuration with `PhotoViewOptions`
 
-![In action](https://user-images.githubusercontent.com/6718144/56463745-45ec0380-63b0-11e9-8e56-0dba5deabb1a.gif)
+Prefer `options` for new integrations. Legacy constructor parameters still
+work and override values from `options` when both are provided.
 
+```dart
+PhotoView(
+  imageProvider: const AssetImage('assets/large-image.jpg'),
+  options: PhotoViewOptions(
+    filterQuality: FilterQuality.high,
+    strictScale: true,
+    overlayBuilder: (context, details) => Align(
+      alignment: Alignment.bottomRight,
+      child: Text(details.scaleState.name),
+    ),
+  ),
+);
+```
 
-Read more about the `PhotoView` widget [here](https://pub.dartlang.org/documentation/photo_view/latest/photo_view/PhotoView-class.html).
+`PhotoViewOptions` supports:
 
+- `backgroundDecoration`
+- `wantKeepAlive`
+- `customSize`
+- `gestureDetectorBehavior`
+- `tightMode`
+- `filterQuality`
+- `disableGestures`
+- `enablePanAlways`
+- `strictScale`
+- `interactionPolicy`
+- `overlayBuilder`
+- `backgroundBuilder`
+- `loadingStateBuilder`
+- `errorStateBuilder`
 
 ## Gallery
-
-To show several images and let user change between them, use `PhotoViewGallery`.
-
-Read more about the gallery [here](https://pub.dartlang.org/documentation/photo_view/latest/photo_view_gallery/PhotoViewGallery-class.html).
 
 ```dart
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-// ...
 
-
-@override
-Widget build(BuildContext context) {
-  return Container(
-    child: PhotoViewGallery.builder(
-      scrollPhysics: const BouncingScrollPhysics(),
-      builder: (BuildContext context, int index) {
-        return PhotoViewGalleryPageOptions(
-          imageProvider: AssetImage(widget.galleryItems[index].image),
-          initialScale: PhotoViewComputedScale.contained * 0.8,
-          heroAttributes: PhotoViewHeroAttributes(tag: galleryItems[index].id),
-        );
-      },
-      itemCount: galleryItems.length,
-      loadingBuilder: (context, event) => Center(
-        child: Container(
-          width: 20.0,
-          height: 20.0,
-          child: CircularProgressIndicator(
-            value: event == null
-                ? 0
-                : event.cumulativeBytesLoaded / event.expectedTotalBytes,
-          ),
+PhotoViewGallery.builder(
+  itemCount: galleryItems.length,
+  options: const PhotoViewGalleryOptions(
+    preloadPagesCount: 2,
+    pageRetentionPolicy: PhotoViewGalleryPageRetentionPolicy.keepAlive,
+  ),
+  builder: (context, index) {
+    final item = galleryItems[index];
+    return PhotoViewGalleryPageOptions(
+      imageProvider: AssetImage(item.image),
+      initialScale: PhotoViewScale.contained,
+      heroAttributes: PhotoViewHeroAttributes(tag: item.id),
+      options: PhotoViewOptions(
+        overlayBuilder: (_, details) => Align(
+          alignment: Alignment.topRight,
+          child: Text(details.scaleState.name),
         ),
       ),
-      backgroundDecoration: widget.backgroundDecoration,
-      pageController: widget.pageController,
-      onPageChanged: onPageChanged,
-    )
-  );
-}
+    );
+  },
+);
 ```
 
-Gallery sample in the example app: 
+`PhotoViewGalleryOptions` adds:
 
-![In action](https://user-images.githubusercontent.com/6718144/56463769-e93d1880-63b0-11e9-8586-55827c95b89c.gif)
+- `preloadPagesCount`
+- `pageRetentionPolicy`
+- `scrollPhysics`
+- `scrollDirection`
+- `allowImplicitScrolling`
+- `pageSnapping`
+- shared `options` for all pages
 
-See the code [here](https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/gallery/gallery_example.dart).
+`PhotoViewGalleryPageOptions` now also accepts:
 
+- `pageKey`
+- `options`
 
+## Interaction Policies
 
-## Usage with controllers
+`PhotoViewInteractionPolicy` lets you customize interaction rules without
+forking the widget.
 
-When you need to interact with PhotoView's internal state values, `PhotoViewController` and `PhotoViewScaleStateController` are the way to.
+```dart
+const policy = PhotoViewInteractionPolicy(
+  filterQuality: defaultFilterQualityProvider,
+  clampPosition: defaultClampPositionPolicy,
+  onGestureEnd: defaultGestureEndPolicy,
+);
+```
 
-Controllers, when specified to PhotoView widget, enables the author(you) to listen for state updates through a `Stream` and change those values externally.
+You can replace:
 
-Read more about controllers [here](https://pub.dartlang.org/documentation/photo_view/latest/photo_view/PhotoView-class.html#controllers).
+- position clamp behavior
+- post-gesture return/fling behavior
+- filter quality while gestures are active
 
-In the example app, we can see what can be achieved with controllers: 
+## Migration Guide
 
-![In action](https://user-images.githubusercontent.com/6718144/56464051-3328fd00-63b7-11e9-9c4d-73b04f72a81e.gif)
+### 1. Update SDK constraints
 
-### More screenshots
+Use Flutter `>=3.14.5` and Dart `>=3.1.0`.
 
+### 2. Replace `dynamic` scale values
 
-| **Custom background, <br>small image <br>and custom alignment** | **Limited scale** | **Hero animation** |
-| ------------- | ------------- | ------------- |
-| ![In action](https://user-images.githubusercontent.com/6718144/56464128-ff4ed700-63b8-11e9-802e-a933b3e79ea3.gif) | ![In action](https://user-images.githubusercontent.com/6718144/56464182-23f77e80-63ba-11e9-87a9-4838ef20af7e.gif) | ![In action](https://user-images.githubusercontent.com/6718144/56464202-9700f500-63ba-11e9-9f47-14e8bf441958.gif) |
-| **Part of the screen** | **Custom child** |
-| ![In action](https://user-images.githubusercontent.com/6718144/56464215-d92a3680-63ba-11e9-9c37-d4796e992123.gif) | ![In action](https://user-images.githubusercontent.com/6718144/56464225-1b537800-63bb-11e9-9c5b-ea8632c99969.gif) |
+Old:
 
-## Support us
+```dart
+PhotoView(
+  minScale: 0.8,
+  maxScale: 3.0,
+  initialScale: 1.0,
+);
+```
 
-You can support us by becoming a patron on Patreon, any support is much appreciated.
+New:
 
-[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/fireslime)
+```dart
+PhotoView(
+  minScale: const PhotoViewScale.fixed(0.8),
+  maxScale: const PhotoViewScale.fixed(3.0),
+  initialScale: const PhotoViewScale.fixed(1.0),
+);
+```
 
+Viewport-relative scales still work:
 
+```dart
+PhotoView(
+  minScale: PhotoViewComputedScale.contained * 0.8,
+  maxScale: PhotoViewComputedScale.covered * 1.8,
+  initialScale: PhotoViewScale.contained,
+);
+```
+
+### 3. Move optional flags into `options`
+
+Old:
+
+```dart
+PhotoView(
+  imageProvider: provider,
+  filterQuality: FilterQuality.high,
+  strictScale: true,
+  enablePanAlways: false,
+);
+```
+
+New:
+
+```dart
+PhotoView(
+  imageProvider: provider,
+  options: const PhotoViewOptions(
+    filterQuality: FilterQuality.high,
+    strictScale: true,
+    enablePanAlways: false,
+  ),
+);
+```
+
+### 4. Migrate gallery setup
+
+Old gallery-wide state retention relied on `wantKeepAlive`.
+
+New code can use:
+
+```dart
+const PhotoViewGalleryOptions(
+  preloadPagesCount: 2,
+  pageRetentionPolicy: PhotoViewGalleryPageRetentionPolicy.keepAlive,
+)
+```
+
+### 5. Adopt rich loading and error builders
+
+Old:
+
+```dart
+loadingBuilder: (context, event) => const CircularProgressIndicator(),
+errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+```
+
+New:
+
+```dart
+options: PhotoViewOptions(
+  loadingStateBuilder: (context, details) {
+    return CircularProgressIndicator(
+      value: details.progress == null
+          ? null
+          : details.progress!.cumulativeBytesLoaded /
+              details.progress!.expectedTotalBytes!,
+    );
+  },
+  errorStateBuilder: (context, details) => Text('${details.error}'),
+),
+```
+
+### Breaking Changes Summary
+
+- Flutter and Dart minimum versions increased
+- scale inputs are now typed as `PhotoViewScale`
+- new options objects are the preferred configuration path
+- gallery adds preload/retention concepts beyond `wantKeepAlive`
+
+## Controllers
+
+`PhotoViewController` exposes viewport state updates.  
+`PhotoViewScaleStateController` exposes scale-state transitions.
+
+Both follow the standard Flutter controller lifecycle: create externally when
+needed, listen to their streams, and dispose them when no longer used.
+
+## Internal Architecture
+
+The package internals are organized as:
+
+- `lib/src/ui/`: widgets, view models, coordinators
+- `lib/src/domain/`: immutable models and interaction rules
+- `lib/src/data/`: image stream resolution
+- `lib/src/core/`: low-level rendering and layout primitives
+- `lib/src/shared/`: small reusable foundation utilities
+
+This matters mainly for contributors. Public integrations should keep using the
+exports from `lib/photo_view.dart` and `lib/photo_view_gallery.dart`.
+
+## Validation
+
+The current package state is validated with:
+
+- `flutter analyze`
+- `flutter test`
+
+## Example App
+
+Run the example locally:
+
+```bash
+flutter run -d <device> example/lib/main.dart
+```
+
+The gallery example demonstrates preload, retention, and overlay support.

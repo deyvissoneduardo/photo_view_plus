@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:photo_view/src/controller/photo_view_controller.dart';
+import 'package:photo_view/src/ui/view_models/photo_view_controller.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -17,7 +17,7 @@ void main() {
       initialPosition: initialPosition,
     );
 
-    const PhotoViewControllerValue testValue = const PhotoViewControllerValue(
+    const PhotoViewControllerValue testValue = PhotoViewControllerValue(
       position: initialPosition,
       scale: null,
       rotation: initialRotation,
@@ -55,29 +55,29 @@ void main() {
     expect(controller.rotation, 0.0);
   });
   test('controller stream mutation', () {
-    const PhotoViewControllerValue value1 = const PhotoViewControllerValue(
+    const PhotoViewControllerValue value1 = PhotoViewControllerValue(
       position: Offset.zero,
       scale: null,
       rotation: 1.0,
       rotationFocusPoint: null,
     );
 
-    const PhotoViewControllerValue value2 = const PhotoViewControllerValue(
+    const PhotoViewControllerValue value2 = PhotoViewControllerValue(
       position: Offset.zero,
       scale: 3.0,
       rotation: 1.0,
       rotationFocusPoint: null,
     );
 
-    const PhotoViewControllerValue value3 = const PhotoViewControllerValue(
-      position: const Offset(1, 1),
+    const PhotoViewControllerValue value3 = PhotoViewControllerValue(
+      position: Offset(1, 1),
       scale: 3.0,
       rotation: 45.0,
       rotationFocusPoint: null,
     );
 
-    const PhotoViewControllerValue value4 = const PhotoViewControllerValue(
-      position: const Offset(1, 1),
+    const PhotoViewControllerValue value4 = PhotoViewControllerValue(
+      position: Offset(1, 1),
       scale: 5.0,
       rotation: 45.0,
       rotationFocusPoint: null,

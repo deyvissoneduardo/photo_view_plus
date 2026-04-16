@@ -4,10 +4,10 @@ publish_to: "none"
 version: 1.0.1
 
 environment:
-  sdk: ">=2.12.0"
+  sdk: ">=3.1.0 <4.0.0"
 
 dependencies:
-  flutter_svg: ^0.21.0-nullsafety.0
+  flutter_svg: ^2.0.10+1
   photo_view:
     path: ../
   flutter:
@@ -16,6 +16,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true

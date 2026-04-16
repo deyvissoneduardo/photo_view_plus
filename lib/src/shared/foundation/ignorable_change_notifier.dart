@@ -1,12 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-/// A [ChangeNotifier] that has a second collection of listeners: the ignorable ones
-///
-/// Those listeners will be fired when [notifyListeners] fires and will be ignored
-/// when [notifySomeListeners] fires.
-///
-/// The common collection of listeners inherited from [ChangeNotifier] will be fired
-/// every time.
 class IgnorableChangeNotifier extends ChangeNotifier {
   ObserverList<VoidCallback>? _ignorableListeners =
       ObserverList<VoidCallback>();
@@ -71,15 +64,12 @@ class IgnorableChangeNotifier extends ChangeNotifier {
     }
   }
 
-  /// Ignores the ignoreables
   @protected
   void notifySomeListeners() {
     super.notifyListeners();
   }
 }
 
-/// Just like [ValueNotifier] except it extends [IgnorableChangeNotifier] which has
-/// listeners that wont fire when [updateIgnoring] is called.
 class IgnorableValueNotifier<T> extends IgnorableChangeNotifier
     implements ValueListenable<T> {
   IgnorableValueNotifier(this._value);

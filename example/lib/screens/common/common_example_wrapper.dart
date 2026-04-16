@@ -3,6 +3,7 @@ import 'package:photo_view/photo_view.dart';
 
 class CommonExampleRouteWrapper extends StatelessWidget {
   const CommonExampleRouteWrapper({
+    super.key,
     this.imageProvider,
     this.loadingBuilder,
     this.backgroundDecoration,
@@ -18,9 +19,9 @@ class CommonExampleRouteWrapper extends StatelessWidget {
   final ImageProvider? imageProvider;
   final LoadingBuilder? loadingBuilder;
   final BoxDecoration? backgroundDecoration;
-  final dynamic minScale;
-  final dynamic maxScale;
-  final dynamic initialScale;
+  final PhotoViewScale? minScale;
+  final PhotoViewScale? maxScale;
+  final PhotoViewScale? initialScale;
   final Alignment basePosition;
   final FilterQuality filterQuality;
   final bool? disableGestures;

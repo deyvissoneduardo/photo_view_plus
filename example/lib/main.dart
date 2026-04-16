@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import './screens/home_screen.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(const MyApp());
 
-ThemeData theme = ThemeData(
+final ThemeData theme = ThemeData(
   primaryColor: Colors.black,
-  backgroundColor: Colors.white10,
+  scaffoldBackgroundColor: Colors.white10,
   fontFamily: 'PTSans',
 );
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Photo View Example App',
       theme: theme,
-      home: Scaffold(
+      home: const Scaffold(
         body: HomeScreen(),
       ),
     );

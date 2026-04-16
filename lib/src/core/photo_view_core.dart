@@ -7,22 +7,21 @@ import 'package:photo_view/photo_view.dart'
         PhotoViewImageTapUpCallback,
         PhotoViewImageScaleEndCallback,
         ScaleStateCycle;
-import 'package:photo_view/src/controller/photo_view_controller.dart';
-import 'package:photo_view/src/controller/photo_view_controller_delegate.dart';
-import 'package:photo_view/src/controller/photo_view_scalestate_controller.dart';
 import 'package:photo_view/src/core/photo_view_gesture_detector.dart';
-import 'package:photo_view/src/core/photo_view_hit_corners.dart';
-import 'package:photo_view/src/utils/photo_view_utils.dart';
+import 'package:photo_view/src/domain/models/models.dart';
+import 'package:photo_view/src/domain/use_cases/use_cases.dart';
+import 'package:photo_view/src/ui/coordinators/photo_view_return_coordinator.dart';
+import 'package:photo_view/src/ui/view_models/view_models.dart';
 
-const _defaultDecoration = const BoxDecoration(
-  color: const Color.fromRGBO(0, 0, 0, 1.0),
+const _defaultDecoration = BoxDecoration(
+  color: Color.fromRGBO(0, 0, 0, 1.0),
 );
 
 /// Internal widget in which controls all animations lifecycle, core responses
 /// to user gestures, updates to  the controller state and mounts the entire PhotoView Layout
 class PhotoViewCore extends StatefulWidget {
   const PhotoViewCore({
-    Key? key,
+    super.key,
     required this.imageProvider,
     required this.backgroundDecoration,
     required this.semanticLabel,
@@ -43,11 +42,11 @@ class PhotoViewCore extends StatefulWidget {
     required this.disableGestures,
     required this.enablePanAlways,
     required this.strictScale,
-  })  : customChild = null,
-        super(key: key);
+    required this.interactionPolicy,
+  }) : customChild = null;
 
   const PhotoViewCore.customChild({
-    Key? key,
+    super.key,
     required this.customChild,
     required this.backgroundDecoration,
     this.heroAttributes,
@@ -66,10 +65,10 @@ class PhotoViewCore extends StatefulWidget {
     required this.disableGestures,
     required this.enablePanAlways,
     required this.strictScale,
+    required this.interactionPolicy,
   })  : imageProvider = null,
         semanticLabel = null,
-        gaplessPlayback = false,
-        super(key: key);
+        gaplessPlayback = false;
 
   final Decoration? backgroundDecoration;
   final ImageProvider? imageProvider;
@@ -94,6 +93,7 @@ class PhotoViewCore extends StatefulWidget {
   final bool disableGestures;
   final bool enablePanAlways;
   final bool strictScale;
+  final PhotoViewInteractionPolicy interactionPolicy;
 
   final FilterQuality filterQuality;
 
@@ -113,6 +113,7 @@ class PhotoViewCoreState extends State<PhotoViewCore>
   Offset? _normalizedPosition;
   double? _scaleBefore;
   double? _rotationBefore;
+  bool _isGestureActive = false;
 
   late final AnimationController _scaleAnimationController;
   Animation<double>? _scaleAnimation;
@@ -127,6 +128,14 @@ class PhotoViewCoreState extends State<PhotoViewCore>
   PhotoViewHeroAttributes? get heroAttributes => widget.heroAttributes;
 
   late ScaleBoundaries cachedScaleBoundaries = widget.scaleBoundaries;
+  static const _returnCoordinator = PhotoViewReturnCoordinator();
+
+  PhotoViewViewportState get _viewportState => PhotoViewViewportState(
+        position: controller.position,
+        scale: scale,
+        rotation: controller.rotation,
+        rotationFocusPoint: controller.rotationFocusPoint,
+      );
 
   void handleScaleAnimation() {
     scale = _scaleAnimation!.value;
@@ -141,6 +150,7 @@ class PhotoViewCoreState extends State<PhotoViewCore>
   }
 
   void onScaleStart(ScaleStartDetails details) {
+    _isGestureActive = true;
     _rotationBefore = controller.rotation;
     _scaleBefore = scale;
     _normalizedPosition = details.focalPoint - controller.position;
@@ -173,48 +183,32 @@ class PhotoViewCoreState extends State<PhotoViewCore>
   }
 
   void onScaleEnd(ScaleEndDetails details) {
-    final double _scale = scale;
-    final Offset _position = controller.position;
-    final double maxScale = scaleBoundaries.maxScale;
-    final double minScale = scaleBoundaries.minScale;
+    _isGestureActive = false;
+    final double currentScale = scale;
+    final Offset currentPosition = controller.position;
 
     widget.onScaleEnd?.call(context, details, controller.value);
 
-    //animate back to maxScale if gesture exceeded the maxScale specified
-    if (_scale > maxScale) {
-      final double scaleComebackRatio = maxScale / _scale;
-      animateScale(_scale, maxScale);
-      final Offset clampedPosition = clampPosition(
-        position: _position * scaleComebackRatio,
-        scale: maxScale,
-      );
-      animatePosition(_position, clampedPosition);
-      return;
+    final gestureEndResult = _returnCoordinator.resolve(
+      interactionPolicy: widget.interactionPolicy,
+      viewportState: _viewportState,
+      layoutMetrics: layoutMetrics(),
+      scaleBoundaries: scaleBoundaries,
+      scaleBefore: _scaleBefore ?? currentScale,
+      velocity: details.velocity,
+    );
+
+    if (gestureEndResult.hasScaleAnimation) {
+      animateScale(currentScale, gestureEndResult.targetScale!);
     }
 
-    //animate back to minScale if gesture fell smaller than the minScale specified
-    if (_scale < minScale) {
-      final double scaleComebackRatio = minScale / _scale;
-      animateScale(_scale, minScale);
-      animatePosition(
-        _position,
-        clampPosition(
-          position: _position * scaleComebackRatio,
-          scale: minScale,
-        ),
-      );
-      return;
+    if (gestureEndResult.hasPositionAnimation) {
+      animatePosition(currentPosition, gestureEndResult.targetPosition!);
     }
-    // get magnitude from gesture velocity
-    final double magnitude = details.velocity.pixelsPerSecond.distance;
 
-    // animate velocity only if there is no scale change and a significant magnitude
-    if (_scaleBefore! / _scale == 1.0 && magnitude >= 400.0) {
-      final Offset direction = details.velocity.pixelsPerSecond / magnitude;
-      animatePosition(
-        _position,
-        clampPosition(position: _position + direction * 100.0),
-      );
+    if (gestureEndResult.hasScaleAnimation ||
+        gestureEndResult.hasPositionAnimation) {
+      return;
     }
   }
 
@@ -317,13 +311,22 @@ class PhotoViewCoreState extends State<PhotoViewCore>
         ) {
           if (snapshot.hasData) {
             final PhotoViewControllerValue value = snapshot.data!;
-            final useImageScale = widget.filterQuality != FilterQuality.none;
+            final activeFilterQuality = widget.interactionPolicy.filterQuality(
+              PhotoViewFilterQualityContext(
+                viewportState: _viewportState,
+                scaleState: scaleStateController.scaleState,
+                preferredQuality: widget.filterQuality,
+                isGestureActive: _isGestureActive,
+              ),
+            );
+            final useImageScale = activeFilterQuality != FilterQuality.none;
 
             final computedScale = useImageScale ? 1.0 : scale;
 
             final matrix = Matrix4.identity()
-              ..translate(value.position.dx, value.position.dy)
-              ..scale(computedScale)
+              ..translateByDouble(
+                  value.position.dx, value.position.dy, 0.0, 1.0)
+              ..scaleByDouble(computedScale, computedScale, 1.0, 1.0)
               ..rotateZ(value.rotation);
 
             final Widget customChildLayout = CustomSingleChildLayout(
@@ -332,21 +335,21 @@ class PhotoViewCoreState extends State<PhotoViewCore>
                 basePosition,
                 useImageScale,
               ),
-              child: _buildHero(),
+              child: _buildHero(activeFilterQuality),
             );
 
             final child = Container(
               constraints: widget.tightMode
                   ? BoxConstraints.tight(scaleBoundaries.childSize * scale)
                   : null,
+              decoration: widget.backgroundDecoration ?? _defaultDecoration,
               child: Center(
                 child: Transform(
-                  child: customChildLayout,
                   transform: matrix,
                   alignment: basePosition,
+                  child: customChildLayout,
                 ),
               ),
-              decoration: widget.backgroundDecoration ?? _defaultDecoration,
             );
 
             if (widget.disableGestures) {
@@ -354,7 +357,6 @@ class PhotoViewCoreState extends State<PhotoViewCore>
             }
 
             return PhotoViewGestureDetector(
-              child: child,
               onDoubleTap: nextScaleState,
               onScaleStart: onScaleStart,
               onScaleUpdate: onScaleUpdate,
@@ -366,6 +368,7 @@ class PhotoViewCoreState extends State<PhotoViewCore>
               onTapDown: widget.onTapDown != null
                   ? (details) => widget.onTapDown!(context, details, value)
                   : null,
+              child: child,
             );
           } else {
             return Container();
@@ -373,7 +376,7 @@ class PhotoViewCoreState extends State<PhotoViewCore>
         });
   }
 
-  Widget _buildHero() {
+  Widget _buildHero(FilterQuality filterQuality) {
     return heroAttributes != null
         ? Hero(
             tag: heroAttributes!.tag,
@@ -381,19 +384,19 @@ class PhotoViewCoreState extends State<PhotoViewCore>
             flightShuttleBuilder: heroAttributes!.flightShuttleBuilder,
             placeholderBuilder: heroAttributes!.placeholderBuilder,
             transitionOnUserGestures: heroAttributes!.transitionOnUserGestures,
-            child: _buildChild(),
+            child: _buildChild(filterQuality),
           )
-        : _buildChild();
+        : _buildChild(filterQuality);
   }
 
-  Widget _buildChild() {
+  Widget _buildChild(FilterQuality filterQuality) {
     return widget.hasCustomChild
         ? widget.customChild!
         : Image(
             image: widget.imageProvider!,
             semanticLabel: widget.semanticLabel,
             gaplessPlayback: widget.gaplessPlayback ?? false,
-            filterQuality: widget.filterQuality,
+            filterQuality: filterQuality,
             width: scaleBoundaries.childSize.width * scale,
             fit: BoxFit.contain,
           );
