@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/src/shared/foundation/ignorable_change_notifier.dart';
+import 'package:photo_view_plus/src/shared/foundation/ignorable_change_notifier.dart';
 
 /// The interface in which controllers will be implemented.
 ///
@@ -16,7 +16,7 @@ import 'package:photo_view/src/shared/foundation/ignorable_change_notifier.dart'
 ///
 /// This was created to allow customization (you can create your own controller class)
 ///
-/// Previously it controlled `scaleState` as well, but duw to some [concerns](https://github.com/renancaraujo/photo_view/issues/127)
+/// Previously it controlled `scaleState` as well, but duw to some [concerns](https://github.com/bluefireteam/photo_view_plus/issues/127)
 /// [ScaleStateListener is responsible for tat value now
 ///
 /// As it is a controller, whoever instantiates it, should [dispose] it afterwards.

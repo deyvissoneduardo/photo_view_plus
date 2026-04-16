@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/src/domain/use_cases/photo_view_transformations.dart';
+import 'package:photo_view_plus/src/domain/use_cases/photo_view_transformations.dart';
 
 /// Pure layout metrics used by gesture and transform code.
 @immutable

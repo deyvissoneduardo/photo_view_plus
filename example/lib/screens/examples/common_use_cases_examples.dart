@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view_example/screens/common/app_bar.dart';
-import 'package:photo_view_example/screens/common/common_example_wrapper.dart';
-import 'package:photo_view_example/screens/common/example_button.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
+import 'package:photo_view_plus_example/screens/common/app_bar.dart';
+import 'package:photo_view_plus_example/screens/common/common_example_wrapper.dart';
+import 'package:photo_view_plus_example/screens/common/example_button.dart';
 
 class CommonUseCasesExamples extends StatelessWidget {
   const CommonUseCasesExamples({super.key});

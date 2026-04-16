@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view_example/screens/common/app_bar.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
+import 'package:photo_view_plus_example/screens/common/app_bar.dart';
 
 class CustomChildExample extends StatelessWidget {
   const CustomChildExample({super.key});

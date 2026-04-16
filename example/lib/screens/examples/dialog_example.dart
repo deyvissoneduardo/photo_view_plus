@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view_example/screens/common/app_bar.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
+import 'package:photo_view_plus_example/screens/common/app_bar.dart';
 
 class DialogExample extends StatefulWidget {
   const DialogExample({super.key});

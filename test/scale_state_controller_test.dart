@@ -1,4 +1,4 @@
-import 'package:photo_view/photo_view.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
 import 'package:test/test.dart';
 
 void main() {

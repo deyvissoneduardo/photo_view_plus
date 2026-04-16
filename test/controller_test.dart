@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:photo_view/src/ui/view_models/photo_view_controller.dart';
+import 'package:photo_view_plus/src/ui/view_models/photo_view_controller.dart';
 import 'package:test/test.dart';
 
 void main() {

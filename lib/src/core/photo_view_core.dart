@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/photo_view.dart'
+import 'package:photo_view_plus/photo_view_plus.dart'
     show
         PhotoViewScaleState,
         PhotoViewHeroAttributes,
@@ -14,11 +14,11 @@ import 'package:photo_view/photo_view.dart'
         PhotoViewImageScaleUpdateCallback,
         PhotoViewImageScaleEndCallback,
         ScaleStateCycle;
-import 'package:photo_view/src/core/photo_view_gesture_detector.dart';
-import 'package:photo_view/src/domain/models/models.dart';
-import 'package:photo_view/src/domain/use_cases/use_cases.dart';
-import 'package:photo_view/src/ui/coordinators/photo_view_return_coordinator.dart';
-import 'package:photo_view/src/ui/view_models/view_models.dart';
+import 'package:photo_view_plus/src/core/photo_view_gesture_detector.dart';
+import 'package:photo_view_plus/src/domain/models/models.dart';
+import 'package:photo_view_plus/src/domain/use_cases/use_cases.dart';
+import 'package:photo_view_plus/src/ui/coordinators/photo_view_return_coordinator.dart';
+import 'package:photo_view_plus/src/ui/view_models/view_models.dart';
 
 const _defaultDecoration = BoxDecoration(
   color: Color.fromRGBO(0, 0, 0, 1.0),

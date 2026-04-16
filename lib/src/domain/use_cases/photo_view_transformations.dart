@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show Size;
 
-import 'package:photo_view/src/domain/models/models.dart';
+import 'package:photo_view_plus/src/domain/models/models.dart';
 
 double getScaleForScaleState(
   PhotoViewScaleState scaleState,

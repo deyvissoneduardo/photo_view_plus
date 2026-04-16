@@ -1,9 +1,9 @@
 # Flutter Photo View
 
-[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view/actions)
-[![Pub](https://img.shields.io/pub/v/photo_view.svg?style=popout)](https://pub.dartlang.org/packages/photo_view)
+[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view_plus/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view_plus/actions)
+[![Pub](https://img.shields.io/pub/v/photo_view_plus.svg?style=popout)](https://pub.dartlang.org/packages/photo_view_plus)
 
-`photo_view` provides a gesture-aware zoomable widget for images and custom
+`photo_view_plus` provides a gesture-aware zoomable widget for images and custom
 content. This fork is updated for modern Flutter, adds a stronger typed API,
 and exposes new configuration points for overlays, gallery behavior, and
 interaction policies.
@@ -15,7 +15,7 @@ interaction policies.
 
 ```yaml
 dependencies:
-  photo_view: ^1.1.0
+  photo_view_plus: ^1.1.0
 ```
 
 ## What's New
@@ -40,7 +40,7 @@ dependencies:
 ## Basic Usage
 
 ```dart
-import 'package:photo_view/photo_view.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
 
 PhotoView(
   imageProvider: const AssetImage('assets/large-image.jpg'),
@@ -118,8 +118,8 @@ trackpad pan/zoom now work out of the box.
 ## Gallery
 
 ```dart
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
+import 'package:photo_view_plus/photo_view_plus_gallery.dart';
 
 PhotoViewGallery.builder(
   itemCount: galleryItems.length,
@@ -354,7 +354,7 @@ The package internals are organized as:
 - `lib/src/shared/`: small reusable foundation utilities
 
 This matters mainly for contributors. Public integrations should keep using the
-exports from `lib/photo_view.dart` and `lib/photo_view_gallery.dart`.
+exports from `lib/photo_view_plus.dart` and `lib/photo_view_plus_gallery.dart`.
 
 ## Validation
 
@@ -386,3 +386,4 @@ flutter run -d <device> example/lib/main.dart
 ```
 
 The gallery example demonstrates preload, retention, and overlay support.
+

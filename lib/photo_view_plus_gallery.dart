@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/photo_view.dart'
+import 'package:photo_view_plus/photo_view_plus.dart'
     show
         LoadingBuilder,
         PhotoView,
@@ -12,9 +12,9 @@ import 'package:photo_view/photo_view.dart'
         PhotoViewImageScaleUpdateCallback,
         PhotoViewImageScaleEndCallback,
         ScaleStateCycle;
-import 'package:photo_view/src/domain/models/models.dart';
-import 'package:photo_view/src/ui/view_models/view_models.dart';
-import 'package:photo_view/src/ui/views/views.dart';
+import 'package:photo_view_plus/src/domain/models/models.dart';
+import 'package:photo_view_plus/src/ui/view_models/view_models.dart';
+import 'package:photo_view_plus/src/ui/views/views.dart';
 
 /// A type definition for a [Function] that receives a index after a page change in [PhotoViewGallery]
 typedef PhotoViewGalleryPageChangedCallback = void Function(int index);

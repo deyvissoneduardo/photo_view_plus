@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/src/data/models/photo_view_image_state.dart';
-import 'package:photo_view/src/data/services/photo_view_image_service.dart';
+import 'package:photo_view_plus/src/data/models/photo_view_image_state.dart';
+import 'package:photo_view_plus/src/data/services/photo_view_image_service.dart';
 
 class PhotoViewImageRepository extends ChangeNotifier {
   PhotoViewImageRepository({

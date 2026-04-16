@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/src/data/repositories/repositories.dart';
-import 'package:photo_view/src/domain/use_cases/use_cases.dart';
-import 'package:photo_view/src/ui/view_models/photo_view_image_view_model.dart';
+import 'package:photo_view_plus/src/data/repositories/repositories.dart';
+import 'package:photo_view_plus/src/domain/use_cases/use_cases.dart';
+import 'package:photo_view_plus/src/ui/view_models/photo_view_image_view_model.dart';
 
-import '../../../photo_view.dart';
+import '../../../photo_view_plus.dart';
 import '../../core/photo_view_core.dart';
 import '../../photo_view_default_widgets.dart';
 

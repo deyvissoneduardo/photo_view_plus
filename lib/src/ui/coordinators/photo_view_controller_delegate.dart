@@ -1,13 +1,13 @@
 import 'package:flutter/widgets.dart';
-import 'package:photo_view/photo_view.dart'
+import 'package:photo_view_plus/photo_view_plus.dart'
     show
         PhotoViewControllerBase,
         PhotoViewScaleState,
         PhotoViewScaleStateController,
         ScaleStateCycle;
-import 'package:photo_view/src/core/photo_view_core.dart';
-import 'package:photo_view/src/domain/models/models.dart';
-import 'package:photo_view/src/domain/use_cases/use_cases.dart';
+import 'package:photo_view_plus/src/core/photo_view_core.dart';
+import 'package:photo_view_plus/src/domain/models/models.dart';
+import 'package:photo_view_plus/src/domain/use_cases/use_cases.dart';
 
 mixin PhotoViewControllerDelegate on State<PhotoViewCore> {
   PhotoViewControllerBase get controller => widget.controller;

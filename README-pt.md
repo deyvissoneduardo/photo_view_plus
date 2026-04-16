@@ -1,9 +1,9 @@
 # Flutter Photo View
 
-[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view/actions)
-[![Pub](https://img.shields.io/pub/v/photo_view.svg?style=popout)](https://pub.dartlang.org/packages/photo_view)
+[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view_plus/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view_plus/actions)
+[![Pub](https://img.shields.io/pub/v/photo_view_plus.svg?style=popout)](https://pub.dartlang.org/packages/photo_view_plus)
 
-`photo_view` fornece um widget com zoom para imagens e conteúdo customizado,
+`photo_view_plus` fornece um widget com zoom para imagens e conteúdo customizado,
 sensível a gestos. Esta versão foi atualizada para Flutter moderno, fortalece a
 tipagem da API e adiciona novos pontos de configuração para overlays, galeria e
 políticas de interação.
@@ -15,7 +15,7 @@ políticas de interação.
 
 ```yaml
 dependencies:
-  photo_view: ^1.1.0
+  photo_view_plus: ^1.1.0
 ```
 
 ## Novidades
@@ -40,7 +40,7 @@ dependencies:
 ## Uso Básico
 
 ```dart
-import 'package:photo_view/photo_view.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
 
 PhotoView(
   imageProvider: const AssetImage('assets/large-image.jpg'),
@@ -118,8 +118,8 @@ pan/zoom por trackpad já funcionam sem configuração extra.
 ## Galeria
 
 ```dart
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
+import 'package:photo_view_plus/photo_view_plus.dart';
+import 'package:photo_view_plus/photo_view_plus_gallery.dart';
 
 PhotoViewGallery.builder(
   itemCount: galleryItems.length,
@@ -355,8 +355,8 @@ Internamente o pacote está organizado em:
 - `lib/src/shared/`: utilitários pequenos de fundação
 
 Isso importa principalmente para contribuidores. Para uso do package, continue
-consumindo as APIs exportadas por `lib/photo_view.dart` e
-`lib/photo_view_gallery.dart`.
+consumindo as APIs exportadas por `lib/photo_view_plus.dart` e
+`lib/photo_view_plus_gallery.dart`.
 
 ## Validação
 
@@ -388,3 +388,4 @@ flutter run -d <device> example/lib/main.dart
 ```
 
 O exemplo de galeria já demonstra preload, retenção de página e overlays.
+

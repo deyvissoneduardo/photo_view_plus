@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:photo_view/src/domain/models/models.dart';
-import 'package:photo_view/src/domain/use_cases/use_cases.dart';
-import 'package:photo_view/src/ui/view_models/view_models.dart';
-import 'package:photo_view/src/ui/views/views.dart';
+import 'package:photo_view_plus/src/domain/models/models.dart';
+import 'package:photo_view_plus/src/domain/use_cases/use_cases.dart';
+import 'package:photo_view_plus/src/ui/view_models/view_models.dart';
+import 'package:photo_view_plus/src/ui/views/views.dart';
 
 export 'src/domain/models/models.dart';
 export 'src/ui/view_models/view_models.dart'
