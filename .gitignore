@@ -77,3 +77,4 @@ build/
 pubspec.lock
 
 .vscode/
+.vscode/settings.json
