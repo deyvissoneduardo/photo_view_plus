@@ -9,9 +9,6 @@ Specifically:
 * Be kind. Be courteous. Be welcoming.
 * Listen. Consider and acknowledge people's points before responding.
 
-Should you experience anything that makes you feel unwelcome
-community, please contact [contact@flutter.dev](mailto:contact@fireslime.xyz)
-or, if you prefer, directly contact someone on the team on our [discord](https://discord.gg/jzM7vPP).
 
 Disclaimer:
 

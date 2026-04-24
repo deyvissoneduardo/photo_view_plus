@@ -1,6 +1,5 @@
 # Flutter Photo View
 
-[![Tests status](https://img.shields.io/github/actions/workflow/status/bluefireteam/photo_view_plus/ci.yml?branch=master)](https://github.com/bluefireteam/photo_view_plus/actions)
 [![Pub](https://img.shields.io/pub/v/photo_view_plus.svg?style=popout)](https://pub.dartlang.org/packages/photo_view_plus)
 
 `photo_view_plus` provides a gesture-aware zoomable widget for images and custom
